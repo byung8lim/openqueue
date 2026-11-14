@@ -10,7 +10,7 @@
 | `openqueue-queue-domain` | M02 | DMZ | 대기열 업무 규칙(FIFO, 입장 선정, 멱등성, 상태 전이). 순수 Java | 0 | **생성됨** |
 | `openqueue-common` | - | 공통 | 오류 코드 계약, 요청 ID 등 Zone 무관 공통 타입. 업무 로직 금지 | 1 | 예정 |
 | `openqueue-queue-application` | M02 | DMZ | 대기 등록·조회·취소·입장 유스케이스, 포트(인터페이스) 정의 | 1 | 예정 |
-| `openqueue-queue-infrastructure` | M04 | DMZ | Redis Adapter, Lua Script, TLS/ACL 연결 | 2 | 예정 |
+| `openqueue-queue-infrastructure` | M04 | DMZ | Redis Adapter, Lua Script, TLS/ACL 연결 | 2 | **생성됨** (TASK-005, DB 드라이버 금지 enforcer 적용) |
 | `openqueue-gateway` | M01, M06 | DMZ | Spring Cloud Gateway, 사이트 식별, 라우팅, SSRF 방어 | 4 | 예정 |
 | `openqueue-control-api` | M09, M10, M11, M12 | 내부 관리망 | 관리 API, Registry, RBAC, 감사, MariaDB 연계 | 5 | 예정 |
 | `openqueue-policy` | M07 | 공유 계약 | 정책 스냅샷 schema, canonical 직렬화, **서명 검증**(DMZ)·서명 인터페이스 | 6 | 예정 |

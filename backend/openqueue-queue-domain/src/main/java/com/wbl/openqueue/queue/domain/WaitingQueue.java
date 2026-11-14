@@ -40,7 +40,7 @@ import java.util.OptionalInt;
  * <p>저장 위치: 메모리. MariaDB 에 저장하지 않는다(DMZ 배치, NET-001).
  * 종단 상태 세션도 메모리에 남긴다(D-QUE-004-4). 보관 기간은 Phase 2 Redis TTL 로 정의한다.
  */
-public final class WaitingQueue {
+public final class WaitingQueue implements QueueOperations {
 
     private static final String SESSION_ID_FIELD = "waiting_session_id";
     private static final String NOW_FIELD = "now";

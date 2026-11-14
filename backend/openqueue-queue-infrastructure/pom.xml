@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  openqueue-queue-infrastructure (모듈 M04)
+
+  - Queue Redis Adapter: Lua Script 로 대기열 연산을 원자적으로 수행하고 TLS/ACL 로 Redis 에 연결한다.
+  - 배치 Zone: DMZ (Queue Engine 프로세스에 포함)
+  - 경계 규칙: DB 드라이버(MariaDB/MySQL)·Flyway·control-api 에 의존할 수 없다(enforcer 로 강제, module-design.md §2 규칙 3).
+  - 통합 테스트(*IT.java)는 Docker(Testcontainers)가 필요하므로 `-Pintegration` 프로파일에서만 실행한다(CI redis-integration 잡).
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.wbl.openqueue</groupId>
+        <artifactId>openqueue-backend</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>openqueue-queue-infrastructure</artifactId>
+    <name>OpenQueue Queue Infrastructure</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.wbl.openqueue</groupId>
+            <artifactId>openqueue-queue-domain</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <!-- DMZ 경계: 내부 DB 드라이버·migration·관리망 모듈 금지 (NET-001, NET-006) -->
+                        <id>enforce-dmz-boundary</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <exclude>org.mariadb.jdbc:*</exclude>
+                                        <exclude>mysql:*</exclude>
+                                        <exclude>com.mysql:*</exclude>
+                                        <exclude>org.flywaydb:*</exclude>
+                                        <exclude>org.springframework:spring-jdbc</exclude>
+                                        <exclude>com.wbl.openqueue:openqueue-control-api</exclude>
+                                    </excludes>
+                                    <message>DMZ 모듈(openqueue-queue-infrastructure)은 DB 드라이버·Flyway·control-api 에 의존할 수 없습니다. (module-design.md §2)</message>
+                                </bannedDependencies>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

@@ -5,6 +5,7 @@
 ## [Unreleased]
 
 ### Added
+- TASK-005 (Phase 2): `openqueue-queue-infrastructure` Redis 어댑터 — Lua 6종 원자 연산, hash tag key 설계, TLS/ACL 연결, QUE-009 FailurePolicy, Testcontainers IT(CI redis-integration 잡), `docs/database/redis-keys.md`
 - TASK-004 (Phase 1 완료): QUE-006 슬라이딩 창 입장률 제한 `AdmissionRateLimit`(Unlimited/PerWindow) (단위 테스트 74건)
 - TASK-003 (Phase 1): QUE-005 동시 입장 상한 기반 입장 가능 인원 계산, QUE-007 입장 lease·heartbeat 슬롯 회수 (단위 테스트 65건)
 - TASK-002 (Phase 1): QUE-003 대기 세션 생성·조회·취소, QUE-004 만료(TTL)·heartbeat·재접속·재진입 정책 (단위 테스트 50건)

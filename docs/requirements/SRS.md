@@ -57,8 +57,8 @@ ID는 한 번 부여하면 재사용하지 않는다. 폐기된 요구사항은 
 | QUE-005 | 동시 입장 상한 기반 입장 가능 인원 계산 | 7.3 | 1 | **검토중** (상세 §3, TASK-003) |
 | QUE-006 | 초당/분당 입장률 제한 | 9.3 | 1 | **검토중** (상세 §3, TASK-004) |
 | QUE-007 | heartbeat 및 입장 lease 관리 | 7.3 | 1, 2 | **검토중** (상세 §3 도메인 부분, TASK-003; Redis 부분은 Phase 2) |
-| QUE-008 | Redis Lua 기반 원자적 등록·입장 할당. Standalone/Sentinel/Cluster 공통 key 설계(hash tag), failover 초과 입장 방지 | 7.3, ADR-0004 | 2 | 초안 |
-| QUE-009 | 사이트별 Fail-open/Fail-closed 정책 적용. **기본값 Fail-closed**, 사이트별 변경 가능 | SEC-11, 12.2, DEC-09 | 2 | 초안 (방향 결정됨) |
+| QUE-008 | Redis Lua 기반 원자적 등록·입장 할당. Standalone/Sentinel/Cluster 공통 key 설계(hash tag), failover 초과 입장 방지 | 7.3, ADR-0004 | 2 | **검토중** (상세 §3, TASK-005; failover 검증은 Phase 7) |
+| QUE-009 | 사이트별 Fail-open/Fail-closed 정책 적용. **기본값 Fail-closed**, 사이트별 변경 가능 | SEC-11, 12.2, DEC-09 | 2 | **검토중** (상세 §3, TASK-005; Gateway 분기는 Phase 4) |
 
 ### 2.3 그 외 영역 (상세화 예정)
 
@@ -529,3 +529,82 @@ When T0+5분에 expire 하면 비어 있고 A 는 ADMITTED 다.
 #### 테스트
 
 - 단위 테스트: `backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java` (QUE-005/007), 기존 `WaitingQueueTest`·`WaitingSessionLifecycleTest` (정책 생성자 인자 추가, 검증 내용 불변)
+
+---
+
+### QUE-008 Redis Lua 기반 원자적 등록·입장 할당
+
+| 항목 | 내용 |
+|---|---|
+| 요구사항 ID | QUE-008 |
+| 기능명 | Redis 어댑터(원자적 대기열 연산, Cluster 호환 key) |
+| 목적 | 여러 Queue Engine 노드·스레드가 같은 대기열을 동시에 다뤄도 FIFO·멱등·동시 입장 상한·입장률 불변조건이 깨지지 않게 한다. |
+| 설명 | 도메인 포트 `QueueOperations` 를 Redis 로 구현한다(`RedisWaitingQueue`). 상태 변경 연산(등록·heartbeat·취소·만료·lease 회수·입장 선정)은 각각 Lua 스크립트 1회로 수행한다. key·자료구조·스크립트 계약은 `docs/database/redis-keys.md` 가 원천이다. 메모리 구현과 의미가 같아야 하며 차이는 시간 정밀도(ms)만 허용한다. |
+| 선행 조건 | Redis 7.x, ACL 계정, 네트워크 경로(NET-003). 정책은 메모리(서명 스냅샷)에서 ARGV 로 전달한다. |
+| 입력 | `QueueOperations` 와 동일 + `RedisRetentionPolicy`(종단 세션·멱등 결과 보존 기간) |
+| 정상 처리 흐름 | redis-keys.md §3 |
+| 예외 처리 | 연결 실패·명령 타임아웃 → `QueueUnavailableException`(QUE-009). 스크립트 계약 위반은 Redis 오류로 전파(버그). 입력 검증은 도메인과 동일. |
+| 상태 변화 | 도메인과 동일. 종단 상태 세션은 보존 기간 후 Redis 에서 사라진다(조회 시 "미등록"). |
+| 권한 | Redis ACL: Queue Engine 전용 계정, `oq:*` key, read/write/scripting 만. |
+| 네트워크 Zone | DMZ (Queue Engine → DMZ Queue Redis, 사설 인터페이스) |
+| 데이터 저장 위치 | DMZ Queue Redis. MariaDB 미사용. 어댑터 모듈은 DB 드라이버 의존을 enforcer 로 금지한다. |
+| 로그/감사 | 어댑터는 로그를 남기지 않는다(Phase 3 API 계층). 예외 메시지에 호스트·자격증명 미포함. |
+| 성능 및 동시성 조건 | 스크립트 1회 = 1 RTT. 만료 회수는 만료 대상 수에 비례. hash tag 로 Cluster 에서 단일 슬롯 원자성. failover 초과 입장 방지는 Phase 7 HA 검증(D-QUE-008-6). |
+| 보안 고려사항 | 정책 값을 Redis 에 두지 않아 Redis 침해로 정책 변조 불가(D-QUE-008-7). TLS 시 인증서 검증 강제. 평문 연결은 CI 컨테이너 전용. |
+| 연관 요구사항 | QUE-001~007, QUE-009, NET-003, NET-006, OPS-* |
+
+#### 수용 기준
+
+```text
+AC-QUE-008-1 한 대기열의 모든 key 는 같은 hash tag 접두어 oq:{site:queue}: 를 공유한다.
+AC-QUE-008-2 TLS 설정을 켜면 SSL 과 서버 인증서 검증이 함께 켜지고 ACL 자격증명이 URI 에 전달된다.
+AC-QUE-008-3 취소·만료된 세션 해시와 멱등 결과 key 에는 보존 TTL 이 걸리고, 재진입하면 TTL 이 풀린다.
+AC-QUE-008-4 서로 다른 어댑터 인스턴스(노드)가 같은 대기열의 등록·순번·입장·멱등 결과를 공유한다.
+AC-QUE-008-5 다른 대기열 범위의 연산은 서로 영향을 주지 않는다.
+AC-QUE-008-6 AC-QUE-001~007 의 수용 기준이 Redis 구현에서도 성립한다(RedisWaitingQueueIT 가 대표 AC 를 재검증).
+```
+
+#### 결정 사항
+
+D-QUE-008-1~7: `docs/database/redis-keys.md` §5 (승인 필요, Redis 계약 I3).
+
+#### 테스트
+
+- 단위(로컬): `RedisKeySpaceTest`, `RedisConnectionFactoryTest`, `LuaScriptTest`
+- 통합(Docker/CI): `RedisWaitingQueueIT` — CI `redis-integration` 잡
+
+---
+
+### QUE-009 사이트별 Fail-open / Fail-closed 정책
+
+| 항목 | 내용 |
+|---|---|
+| 요구사항 ID | QUE-009 |
+| 기능명 | 대기열 저장소 장애 시 처리 정책 |
+| 목적 | Redis 장애 시 원본 서비스 보호(차단)와 가용성(통과) 중 사이트가 선택한 쪽으로 일관되게 동작하게 한다. 기본값은 Fail-closed(DEC-09). |
+| 설명 | 도메인에 `FailurePolicy { FAIL_CLOSED, FAIL_OPEN }`, `DEFAULT = FAIL_CLOSED` 를 둔다. 어댑터는 연결 실패·타임아웃을 `QueueUnavailableException` 으로 보고하고 자동 재시도하지 않는다. 실제 분기(차단 응답 vs 대기열 우회 통과)는 Gateway(Phase 4)가 사이트 정책을 읽어 수행한다. |
+| 선행 조건 | 사이트 정책(Phase 5 Control Plane)에 `failure_policy` 필드. 없으면 기본값. |
+| 입력 | 저장소 예외, 사이트 `failure_policy` |
+| 정상 처리 흐름 | Phase 2: 예외 보고 계약과 기본값. Phase 4: `FAIL_CLOSED` → 503 류 차단 응답, `FAIL_OPEN` → 대기열 생략 통과(토큰 없이 Ingress 가 허용하도록 별도 신호 필요 — Phase 6 토큰 계약과 함께 결정). |
+| 예외 처리 | 정책 값이 알 수 없으면 FAIL_CLOSED 로 처리. |
+| 상태 변화 | 없음 |
+| 권한 | 사이트 정책 변경은 Control Plane RBAC(Phase 5) |
+| 네트워크 Zone | DMZ |
+| 데이터 저장 위치 | 정책 스냅샷(메모리) |
+| 로그/감사 | Fail-open 발동은 감사 대상(Phase 7 경보). |
+| 성능 및 동시성 조건 | 명령 타임아웃(`commandTimeout`)이 장애 감지 지연의 상한. |
+| 보안 고려사항 | Fail-open 은 공격자가 Redis 를 마비시켜 대기열을 우회하는 경로가 되므로 기본값으로 두지 않고 사이트 운영자가 명시적으로 선택·감사한다. |
+| 연관 요구사항 | QUE-008, GAT-*, SEC-11 |
+
+#### 수용 기준
+
+```text
+AC-QUE-009-1 Redis 에 연결할 수 없으면 QueueUnavailableException 이 발생하고 메시지에 호스트·자격증명이 포함되지 않는다.
+AC-QUE-009-2 사이트 정책이 지정되지 않으면 FailurePolicy.DEFAULT 는 FAIL_CLOSED 다.
+AC-QUE-009-3 (Phase 4) Gateway 는 FAIL_CLOSED 사이트에서 저장소 장애 시 신규 입장을 차단한다.
+```
+
+#### 테스트
+
+- 단위: `FailurePolicyTest`(AC-QUE-009-2), `RedisConnectionFactoryTest.unreachableHostIsReportedAsUnavailable`(AC-QUE-009-1)
+- AC-QUE-009-3 은 Phase 4 Gateway 테스트
