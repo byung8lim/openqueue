@@ -35,7 +35,7 @@
 
         <!-- 테스트 의존성 -->
         <junit-jupiter.version>5.13.4</junit-jupiter.version>
-        <assertj.version>3.27.6</assertj.version>
+        <assertj.version>3.27.7</assertj.version>
         <testcontainers.version>1.21.4</testcontainers.version>
 
         <!-- 빌드/정적 분석 플러그인 -->
