@@ -1,0 +1,32 @@
+# Build
+target/
+build/
+out/
+node_modules/
+dist/
+coverage/
+
+# IDE
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 비밀정보 및 로컬 설정 (SECURITY.md 4절) - 절대 커밋 금지
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.pfx
+secrets/
+**/application-local.*

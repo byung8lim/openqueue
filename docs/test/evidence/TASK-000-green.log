@@ -1,0 +1,13 @@
+# TASK-000 Green 단계 증거 (2026-11-13T21:44Z)
+# 명령: cd backend && mvn -B verify
+[INFO] You have 0 Checkstyle violations.
+[INFO] Rule 0: org.apache.maven.enforcer.rules.dependency.BannedDependencies passed
+[INFO] Tests run: 18, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.364 s -- in AC-QUE-001-6 식별자 검증
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.040 s -- in AC-QUE-001-4/5 경계값과 연속 입장
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in AC-QUE-001-2/3 중복 등록
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.017 s -- in AC-QUE-001-1 FIFO 선정과 재전송 멱등성
+[INFO] Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.090 s -- in QUE-001 WaitingQueue
+[INFO] Tests run: 34, Failures: 0, Errors: 0, Skipped: 0
+[INFO] You have 0 Checkstyle violations.
+[INFO] BugInstance size is 0
+[INFO] BUILD SUCCESS

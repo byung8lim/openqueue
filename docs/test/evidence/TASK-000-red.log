@@ -1,0 +1,4 @@
+# TASK-000 Red 단계 증거 (골격 구현 상태, 명령: cd backend && mvn test)
+[INFO] Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.065 s -- in QUE-001 WaitingQueue
+[ERROR] Tests run: 34, Failures: 15, Errors: 15, Skipped: 0
+[INFO] BUILD FAILURE

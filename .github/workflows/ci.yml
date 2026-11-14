@@ -1,0 +1,72 @@
+# OpenQueue CI 필수 게이트 (개발요청서 8.3)
+#
+# 현재 포함된 게이트(TASK-000):
+#   - 빌드 / 단위 테스트 / 모듈 경계(enforcer) / Checkstyle / SpotBugs / 커버리지 리포트  -> backend-verify
+#   - 비밀정보 탐지                                                                        -> secret-scan
+# 이후 Phase에서 추가할 게이트:
+#   - 통합 테스트(Testcontainers, Phase 2), 계약 테스트, migration 검증(Phase 5),
+#     의존성 취약점 검사(OD-05 채택: Dependabot은 적용됨, Trivy 잡은 Phase 2 비차단 → Phase 7 차단), 프론트엔드 테스트(Phase 3)
+#
+# 보안:
+#   - 워크플로 권한은 읽기 전용으로 최소화한다.
+#   - 서드파티 Action은 커밋 SHA로 고정한다(OD-04 결정). 주석의 버전은 사람이 읽기 위한 것이며
+#     Dependabot(.github/dependabot.yml)이 SHA와 주석을 함께 갱신한다.
+#     SHA는 2026-11-14 `git ls-remote --tags`로 확인한 값이다. (open-decisions.md §5)
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-verify:
+    name: backend - build, test, static analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: mvn verify
+        run: mvn -B -ntp verify
+
+      - name: Upload test and analysis reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: backend-reports
+          path: |
+            backend/**/target/surefire-reports/
+            backend/**/target/site/jacoco/
+            backend/**/target/checkstyle-result.xml
+            backend/**/target/spotbugsXml.xml
+          retention-days: 14
+
+  secret-scan:
+    name: secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
