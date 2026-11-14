@@ -1,0 +1,354 @@
+[INFO] Scanning for projects...
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] OpenQueue Backend                                                  [pom]
+[INFO] OpenQueue Queue Domain                                             [jar]
+[INFO] 
+[INFO] ----------------< com.wbl.openqueue:openqueue-backend >-----------------
+[INFO] Building OpenQueue Backend 0.1.0-SNAPSHOT                          [1/2]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-build-environment) @ openqueue-backend ---
+[INFO] Rule 0: org.apache.maven.enforcer.rules.version.RequireMavenVersion passed
+[INFO] Rule 1: org.apache.maven.enforcer.rules.version.RequireJavaVersion passed
+[INFO] Rule 2: org.apache.maven.enforcer.rules.dependency.DependencyConvergence passed
+[INFO] Rule 3: org.apache.maven.enforcer.rules.BanDuplicatePomDependencyVersions passed
+[INFO] 
+[INFO] --- jacoco:0.8.14:prepare-agent (prepare-agent) @ openqueue-backend ---
+[INFO] argLine set to -javaagent:C:\\Users\\byung8lim\\.m2\\repository\\org\\jacoco\\org.jacoco.agent\\0.8.14\\org.jacoco.agent-0.8.14-runtime.jar=destfile=C:\\dev\\workspace\\openqueue\\backend\\target\\jacoco.exec
+[INFO] 
+[INFO] --------------< com.wbl.openqueue:openqueue-queue-domain >--------------
+[INFO] Building OpenQueue Queue Domain 0.1.0-SNAPSHOT                     [2/2]
+[INFO]   from openqueue-queue-domain\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-build-environment) @ openqueue-queue-domain ---
+[INFO] Rule 2: org.apache.maven.enforcer.rules.dependency.DependencyConvergence passed
+[INFO] Rule 3: org.apache.maven.enforcer.rules.BanDuplicatePomDependencyVersions passed
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-pure-domain-boundary) @ openqueue-queue-domain ---
+[INFO] Rule 0: org.apache.maven.enforcer.rules.dependency.BannedDependencies passed
+[INFO] 
+[INFO] --- jacoco:0.8.14:prepare-agent (prepare-agent) @ openqueue-queue-domain ---
+[INFO] argLine set to -javaagent:C:\\Users\\byung8lim\\.m2\\repository\\org\\jacoco\\org.jacoco.agent\\0.8.14\\org.jacoco.agent-0.8.14-runtime.jar=destfile=C:\\dev\\workspace\\openqueue\\backend\\openqueue-queue-domain\\target\\jacoco.exec
+[INFO] 
+[INFO] --- resources:3.4.0:resources (default-resources) @ openqueue-queue-domain ---
+[INFO] skip non existing resourceDirectory C:\dev\workspace\openqueue\backend\openqueue-queue-domain\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ openqueue-queue-domain ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.4.0:testResources (default-testResources) @ openqueue-queue-domain ---
+[INFO] skip non existing resourceDirectory C:\dev\workspace\openqueue\backend\openqueue-queue-domain\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ openqueue-queue-domain ---
+[INFO] Recompiling the module because of added or removed source files.
+[INFO] Compiling 4 source files with javac [debug release 21] to target\test-classes
+[INFO] Some messages have been simplified; recompile with -Xdiags:verbose to get full output
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[31,13] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+  required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+  found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[38,14] method admit in class com.wbl.openqueue.queue.domain.WaitingQueue cannot be applied to given types;
+  required: com.wbl.openqueue.queue.domain.AdmissionRequestId,int,java.time.Instant
+  found:    com.wbl.openqueue.queue.domain.AdmissionRequestId,java.time.Instant
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[54,43] method admit in class com.wbl.openqueue.queue.domain.WaitingQueue cannot be applied to given types;
+  required: com.wbl.openqueue.queue.domain.AdmissionRequestId,int,java.time.Instant
+  found:    com.wbl.openqueue.queue.domain.AdmissionRequestId,java.time.Instant
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[59,29] cannot find symbol
+  symbol:   method availableSlots(java.time.Instant)
+  location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[68,42] method admit in class com.wbl.openqueue.queue.domain.WaitingQueue cannot be applied to given types;
+  required: com.wbl.openqueue.queue.domain.AdmissionRequestId,int,java.time.Instant
+  found:    com.wbl.openqueue.queue.domain.AdmissionRequestId,java.time.Instant
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[69,43] method admit in class com.wbl.openqueue.queue.domain.WaitingQueue cannot be applied to given types;
+  required: com.wbl.openqueue.queue.domain.AdmissionRequestId,int,java.time.Instant
+  found:    com.wbl.openqueue.queue.domain.AdmissionRequestId,java.time.Instant
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[96,29] cannot find symbol
+  symbol:   method availableSlots(java.time.Instant)
+  location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[100,29] cannot find symbol
+  symbol:   method availableSlots(java.time.Instant)
+  location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[101,29] method admit in class com.wbl.openqueue.queue.domain.WaitingQueue cannot be applied to given types;
+  required: com.wbl.openqueue.queue.domain.AdmissionRequestId,int,java.time.Instant
+  found:    com.wbl.openqueue.queue.domain.AdmissionRequestId,java.time.Instant
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[107,38] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+  required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+  found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[109,38] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+  required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+  found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[118,29] cannot find symbol
+  symbol:   method availableSlots(java.time.Instant)
+  location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[119,29] cannot find symbol
+  symbol:   method availableSlots(java.time.Instant)
+  location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[127,43] method admit in class com.wbl.openqueue.queue.domain.WaitingQueue cannot be applied to given types;
+  required: com.wbl.openqueue.queue.domain.AdmissionRequestId,int,java.time.Instant
+  found:    <nulltype>,java.time.Instant
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[128,43] method admit in class com.wbl.openqueue.queue.domain.WaitingQueue cannot be applied to given types;
+  required: com.wbl.openqueue.queue.domain.AdmissionRequestId,int,java.time.Instant
+  found:    com.wbl.openqueue.queue.domain.AdmissionRequestId,<nulltype>
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[129,43] cannot find symbol
+  symbol:   method availableSlots(<nulltype>)
+  location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[130,43] cannot find symbol
+  symbol:   method expireLeases(<nulltype>)
+  location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[143,29] cannot find symbol
+  symbol:   method expireLeases(java.time.Instant)
+  location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[146,29] cannot find symbol
+  symbol:   method availableSlots(java.time.Instant)
+  location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[154,29] cannot find symbol
+  symbol:   method expireLeases(java.time.Instant)
+  location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[157,29] cannot find symbol
+  symbol:   method expireLeases(java.time.Instant)
+  location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[166,29] cannot find symbol
+  symbol:   method expireLeases(java.time.Instant)
+  location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[167,29] cannot find symbol
+  symbol:   method expireLeases(java.time.Instant)
+  location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[176,18] method admit in class com.wbl.openqueue.queue.domain.WaitingQueue cannot be applied to given types;
+  required: com.wbl.openqueue.queue.domain.AdmissionRequestId,int,java.time.Instant
+  found:    com.wbl.openqueue.queue.domain.AdmissionRequestId,java.time.Instant
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[179,29] cannot find symbol
+  symbol:   method expireLeases(java.time.Instant)
+  location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[181,29] cannot find symbol
+  symbol:   method expireLeases(java.time.Instant)
+  location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[191,43] method admit in class com.wbl.openqueue.queue.domain.WaitingQueue cannot be applied to given types;
+  required: com.wbl.openqueue.queue.domain.AdmissionRequestId,int,java.time.Instant
+  found:    com.wbl.openqueue.queue.domain.AdmissionRequestId,java.time.Instant
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[191,68] incompatible types: java.time.Instant cannot be converted to int
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[203,23] cannot find symbol
+  symbol:   method expireLeases(java.time.Instant)
+  location: variable allowQueue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[209,22] cannot find symbol
+  symbol:   method expireLeases(java.time.Instant)
+  location: variable denyQueue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[217,38] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+  required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+  found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[219,38] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+  required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+  found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[221,38] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+  required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+  found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,<nulltype>
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[232,29] cannot find symbol
+  symbol:   method availableSlots(java.time.Instant)
+  location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/WaitingQueueTest.java:[32,13] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+  required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+  found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/WaitingSessionLifecycleTest.java:[29,13] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+  required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+  found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/WaitingSessionLifecycleTest.java:[229,38] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+  required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+  found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/WaitingSessionLifecycleTest.java:[231,38] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+  required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+  found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/WaitingSessionLifecycleTest.java:[233,38] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+  required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+  found:    <nulltype>,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+  reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/WaitingSessionLifecycleTest.java:[235,38] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+  required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+  found:    java.time.Duration,<nulltype>,int,java.time.Duration
+  reason: actual and formal argument lists differ in length
+[INFO] 40 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for OpenQueue Backend 0.1.0-SNAPSHOT:
+[INFO] 
+[INFO] OpenQueue Backend .................................. SUCCESS [  0.457 s]
+[INFO] OpenQueue Queue Domain ............................. FAILURE [  3.732 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  4.342 s
+[INFO] Finished at: 2026-11-14T15:45:43+09:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.14.1:testCompile (default-testCompile) on project openqueue-queue-domain: Compilation failure: Compilation failure: 
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[31,13] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+[ERROR]   required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+[ERROR]   found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[38,14] method admit in class com.wbl.openqueue.queue.domain.WaitingQueue cannot be applied to given types;
+[ERROR]   required: com.wbl.openqueue.queue.domain.AdmissionRequestId,int,java.time.Instant
+[ERROR]   found:    com.wbl.openqueue.queue.domain.AdmissionRequestId,java.time.Instant
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[54,43] method admit in class com.wbl.openqueue.queue.domain.WaitingQueue cannot be applied to given types;
+[ERROR]   required: com.wbl.openqueue.queue.domain.AdmissionRequestId,int,java.time.Instant
+[ERROR]   found:    com.wbl.openqueue.queue.domain.AdmissionRequestId,java.time.Instant
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[59,29] cannot find symbol
+[ERROR]   symbol:   method availableSlots(java.time.Instant)
+[ERROR]   location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[68,42] method admit in class com.wbl.openqueue.queue.domain.WaitingQueue cannot be applied to given types;
+[ERROR]   required: com.wbl.openqueue.queue.domain.AdmissionRequestId,int,java.time.Instant
+[ERROR]   found:    com.wbl.openqueue.queue.domain.AdmissionRequestId,java.time.Instant
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[69,43] method admit in class com.wbl.openqueue.queue.domain.WaitingQueue cannot be applied to given types;
+[ERROR]   required: com.wbl.openqueue.queue.domain.AdmissionRequestId,int,java.time.Instant
+[ERROR]   found:    com.wbl.openqueue.queue.domain.AdmissionRequestId,java.time.Instant
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[96,29] cannot find symbol
+[ERROR]   symbol:   method availableSlots(java.time.Instant)
+[ERROR]   location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[100,29] cannot find symbol
+[ERROR]   symbol:   method availableSlots(java.time.Instant)
+[ERROR]   location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[101,29] method admit in class com.wbl.openqueue.queue.domain.WaitingQueue cannot be applied to given types;
+[ERROR]   required: com.wbl.openqueue.queue.domain.AdmissionRequestId,int,java.time.Instant
+[ERROR]   found:    com.wbl.openqueue.queue.domain.AdmissionRequestId,java.time.Instant
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[107,38] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+[ERROR]   required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+[ERROR]   found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[109,38] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+[ERROR]   required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+[ERROR]   found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[118,29] cannot find symbol
+[ERROR]   symbol:   method availableSlots(java.time.Instant)
+[ERROR]   location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[119,29] cannot find symbol
+[ERROR]   symbol:   method availableSlots(java.time.Instant)
+[ERROR]   location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[127,43] method admit in class com.wbl.openqueue.queue.domain.WaitingQueue cannot be applied to given types;
+[ERROR]   required: com.wbl.openqueue.queue.domain.AdmissionRequestId,int,java.time.Instant
+[ERROR]   found:    <nulltype>,java.time.Instant
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[128,43] method admit in class com.wbl.openqueue.queue.domain.WaitingQueue cannot be applied to given types;
+[ERROR]   required: com.wbl.openqueue.queue.domain.AdmissionRequestId,int,java.time.Instant
+[ERROR]   found:    com.wbl.openqueue.queue.domain.AdmissionRequestId,<nulltype>
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[129,43] cannot find symbol
+[ERROR]   symbol:   method availableSlots(<nulltype>)
+[ERROR]   location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[130,43] cannot find symbol
+[ERROR]   symbol:   method expireLeases(<nulltype>)
+[ERROR]   location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[143,29] cannot find symbol
+[ERROR]   symbol:   method expireLeases(java.time.Instant)
+[ERROR]   location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[146,29] cannot find symbol
+[ERROR]   symbol:   method availableSlots(java.time.Instant)
+[ERROR]   location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[154,29] cannot find symbol
+[ERROR]   symbol:   method expireLeases(java.time.Instant)
+[ERROR]   location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[157,29] cannot find symbol
+[ERROR]   symbol:   method expireLeases(java.time.Instant)
+[ERROR]   location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[166,29] cannot find symbol
+[ERROR]   symbol:   method expireLeases(java.time.Instant)
+[ERROR]   location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[167,29] cannot find symbol
+[ERROR]   symbol:   method expireLeases(java.time.Instant)
+[ERROR]   location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[176,18] method admit in class com.wbl.openqueue.queue.domain.WaitingQueue cannot be applied to given types;
+[ERROR]   required: com.wbl.openqueue.queue.domain.AdmissionRequestId,int,java.time.Instant
+[ERROR]   found:    com.wbl.openqueue.queue.domain.AdmissionRequestId,java.time.Instant
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[179,29] cannot find symbol
+[ERROR]   symbol:   method expireLeases(java.time.Instant)
+[ERROR]   location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[181,29] cannot find symbol
+[ERROR]   symbol:   method expireLeases(java.time.Instant)
+[ERROR]   location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[191,43] method admit in class com.wbl.openqueue.queue.domain.WaitingQueue cannot be applied to given types;
+[ERROR]   required: com.wbl.openqueue.queue.domain.AdmissionRequestId,int,java.time.Instant
+[ERROR]   found:    com.wbl.openqueue.queue.domain.AdmissionRequestId,java.time.Instant
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[191,68] incompatible types: java.time.Instant cannot be converted to int
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[203,23] cannot find symbol
+[ERROR]   symbol:   method expireLeases(java.time.Instant)
+[ERROR]   location: variable allowQueue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[209,22] cannot find symbol
+[ERROR]   symbol:   method expireLeases(java.time.Instant)
+[ERROR]   location: variable denyQueue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[217,38] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+[ERROR]   required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+[ERROR]   found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[219,38] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+[ERROR]   required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+[ERROR]   found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[221,38] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+[ERROR]   required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+[ERROR]   found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,<nulltype>
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java:[232,29] cannot find symbol
+[ERROR]   symbol:   method availableSlots(java.time.Instant)
+[ERROR]   location: variable queue of type com.wbl.openqueue.queue.domain.WaitingQueue
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/WaitingQueueTest.java:[32,13] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+[ERROR]   required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+[ERROR]   found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/WaitingSessionLifecycleTest.java:[29,13] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+[ERROR]   required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+[ERROR]   found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/WaitingSessionLifecycleTest.java:[229,38] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+[ERROR]   required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+[ERROR]   found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/WaitingSessionLifecycleTest.java:[231,38] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+[ERROR]   required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+[ERROR]   found:    java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/WaitingSessionLifecycleTest.java:[233,38] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+[ERROR]   required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+[ERROR]   found:    <nulltype>,com.wbl.openqueue.queue.domain.ReentryPolicy,int,java.time.Duration
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/WaitingSessionLifecycleTest.java:[235,38] constructor QueuePolicy in record com.wbl.openqueue.queue.domain.QueuePolicy cannot be applied to given types;
+[ERROR]   required: java.time.Duration,com.wbl.openqueue.queue.domain.ReentryPolicy
+[ERROR]   found:    java.time.Duration,<nulltype>,int,java.time.Duration
+[ERROR]   reason: actual and formal argument lists differ in length
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR] 
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :openqueue-queue-domain

@@ -22,9 +22,11 @@ class WaitingSessionLifecycleTest {
     private static final WaitingSessionId SESSION_C = new WaitingSessionId("sessionC-0000000003");
     private static final Instant T0 = Instant.parse("2026-11-14T00:00:00Z");
     private static final Duration TTL = Duration.ofMinutes(5);
+    private static final Duration LEASE_TTL = Duration.ofMinutes(10);
 
     private static WaitingQueue newQueue(ReentryPolicy reentry) {
-        return new WaitingQueue(new QueueScope(new SiteId("shop"), new QueueId("main")), new QueuePolicy(TTL, reentry));
+        return new WaitingQueue(new QueueScope(new SiteId("shop"), new QueueId("main")),
+            new QueuePolicy(TTL, reentry, 10, LEASE_TTL));
     }
 
     @Nested
@@ -224,11 +226,13 @@ class WaitingSessionLifecycleTest {
         @Test
         @DisplayName("AC-QUE-004-8 정책 검증: ttl 0·음수·null, reentry null 은 입력 오류")
         void policyValidation() {
-            assertThatThrownBy(() -> new QueuePolicy(Duration.ZERO, ReentryPolicy.ALLOW)).isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> new QueuePolicy(Duration.ofSeconds(-1), ReentryPolicy.ALLOW))
+            assertThatThrownBy(() -> new QueuePolicy(Duration.ZERO, ReentryPolicy.ALLOW, 10, LEASE_TTL))
                 .isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> new QueuePolicy(null, ReentryPolicy.ALLOW)).isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> new QueuePolicy(TTL, null)).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new QueuePolicy(Duration.ofSeconds(-1), ReentryPolicy.ALLOW, 10, LEASE_TTL))
+                .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new QueuePolicy(null, ReentryPolicy.ALLOW, 10, LEASE_TTL))
+                .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new QueuePolicy(TTL, null, 10, LEASE_TTL)).isInstanceOf(IllegalArgumentException.class);
         }
     }
 }

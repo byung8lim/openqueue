@@ -54,9 +54,9 @@ ID는 한 번 부여하면 재사용하지 않는다. 폐기된 요구사항은 
 | QUE-002 | Site/Queue 식별자 모델 및 입력 검증 | DEC-12 | 1 | 검토중 (QUE-001 D-QUE-001-3로 구현, DEC-12 확정) |
 | QUE-003 | 대기 세션 생성·조회·취소 | 9.3 | 1 | **검토중** (상세 §3, TASK-002) |
 | QUE-004 | 세션 만료(TTL) 및 재접속 복구 규칙 | 9.3, 8.2 | 1 | **검토중** (상세 §3, TASK-002) |
-| QUE-005 | 동시 입장 상한 기반 입장 가능 인원 계산 | 7.3 | 1 | 초안 |
+| QUE-005 | 동시 입장 상한 기반 입장 가능 인원 계산 | 7.3 | 1 | **검토중** (상세 §3, TASK-003) |
 | QUE-006 | 초당/분당 입장률 제한 | 9.3 | 1 | 초안 |
-| QUE-007 | heartbeat 및 입장 lease 관리 | 7.3 | 1, 2 | 초안 |
+| QUE-007 | heartbeat 및 입장 lease 관리 | 7.3 | 1, 2 | **검토중** (상세 §3 도메인 부분, TASK-003; Redis 부분은 Phase 2) |
 | QUE-008 | Redis Lua 기반 원자적 등록·입장 할당. Standalone/Sentinel/Cluster 공통 key 설계(hash tag), failover 초과 입장 방지 | 7.3, ADR-0004 | 2 | 초안 |
 | QUE-009 | 사이트별 Fail-open/Fail-closed 정책 적용. **기본값 Fail-closed**, 사이트별 변경 가능 | SEC-11, 12.2, DEC-09 | 2 | 초안 (방향 결정됨) |
 
@@ -300,3 +300,148 @@ When ttl 이 0, 음수, null 이거나 reentry 가 null 이면 정책 생성 시
 
 - 단위 테스트: `backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/WaitingSessionLifecycleTest.java` (QUE-003/004), `WaitingQueueTest.java` (QUE-001 회귀, 시그니처 갱신)
 
+
+---
+
+### QUE-005 동시 입장 상한 기반 입장 가능 인원 계산
+
+| 항목 | 내용 |
+|---|---|
+| 요구사항 ID | QUE-005 |
+| 기능명 | 동시 입장 상한과 입장 가능 인원 계산 |
+| 목적 | 원본 서비스가 동시에 수용할 수 있는 인원(동시 입장 상한)을 넘지 않도록, 현재 점유 중인 입장 수를 기준으로 이번에 입장시킬 수 있는 인원을 계산한다. 단순 FIFO 순번만으로는 상한을 보장할 수 없다(설계서 7.3). |
+| 설명 | `QueuePolicy`에 동시 입장 상한 `concurrency_limit`(1 이상)을 둔다. "활성 입장"은 `ADMITTED` 상태이면서 입장 lease(QUE-007)가 아직 유효한 세션이다. `available_slots = concurrency_limit - 활성 입장 수`(0 미만이면 0). 입장 후보 선정(`admit`)은 이 값을 상한으로 하며, 호출자가 인원을 명시해도 남은 슬롯을 넘을 수 없다. |
+| 선행 조건 | `QueuePolicy`가 유효하다(`concurrency_limit >= 1`, `admission_lease_ttl > 0`). |
+| 입력 | (정책) `concurrency_limit` / (선정) `admission_request_id`, `now`, 선택적으로 `requested_slots`(0 이상) / (조회) `now` |
+| 정상 처리 흐름 | 1) `admit(request_id, now)`: lease 만료 세션 회수(QUE-007) → 대기 만료 세션 정리(QUE-004) → `available_slots` 계산 → 대기 순서 앞에서부터 그 수만큼 `ADMITTED` 전이 → 멱등 키에 결과 기록. 2) `admit(request_id, requested_slots, now)`: 위와 같되 선정 인원은 `min(requested_slots, available_slots)`. 3) `availableSlots(now)`: 상태를 바꾸지 않고 현재 남은 슬롯을 돌려준다(lease 가 `now` 기준으로 유효한 `ADMITTED` 만 계산). |
+| 예외 처리 | `concurrency_limit < 1` → 정책 생성 오류. `requested_slots < 0`, null 입력 → 입력 오류(상태 불변). 슬롯이 0이면 오류가 아니라 빈 선정 결과를 반환하고 멱등 키에 기록한다. |
+| 상태 변화 | `WAITING` → `ADMITTED` (QUE-001과 동일). 상한 때문에 선정되지 않은 세션은 `WAITING` 과 순번을 유지한다. |
+| 권한 | 없음(도메인). 정책 값 변경 권한은 Control Plane(Phase 5). |
+| 네트워크 Zone | DMZ (Queue Engine) |
+| 데이터 저장 위치 | Phase 1 메모리. Phase 2: 활성 입장 수는 Redis(lease key 집합 또는 카운터)에서 Lua 로 원자 계산(QUE-008). |
+| 로그/감사 | 없음(도메인). 활성 입장 수·남은 슬롯은 지표(OBS). |
+| 성능 및 동시성 조건 | 활성 입장 수 계산은 `ADMITTED` 세션 수에 대해 O(m). 다중 노드 원자성은 QUE-008. failover 시 카운터 과소 계산으로 상한을 넘는 문제는 QUE-008 복구 정책에서 다룬다. |
+| 보안 고려사항 | 상한 초과 입장은 원본 서비스 과부하(가용성 침해)로 이어지므로 "활성 입장 수 ≤ 상한"을 도메인 불변조건으로 둔다. 호출자가 넘기는 인원 값도 신뢰하지 않고 상한으로 다시 제한한다. |
+| 연관 요구사항 | QUE-001, QUE-003, QUE-006, QUE-007, QUE-008, OBS-* |
+
+#### 수용 기준
+
+```text
+AC-QUE-005-1 상한만큼만 선정
+Given concurrency_limit=2 이고 A, B, C 가 순서대로 대기 중일 때
+When admit(now) 하면
+Then A, B 가 선정되고 C 는 WAITING 으로 순번 1을 유지하며 availableSlots(now)=0 이다.
+
+AC-QUE-005-2 슬롯이 없으면 빈 결과(오류 아님)
+Given 슬롯이 0 인 상태에서 D 가 대기 중일 때
+When 새 요청 R 로 admit(now) 하면
+Then 선정 목록은 비어 있고 D 는 WAITING 이다.
+And 같은 R 을 재전송해도 빈 결과가 그대로 반환된다.
+
+AC-QUE-005-3 명시 인원도 남은 슬롯으로 제한
+Given concurrency_limit=2 이고 A, B, C 가 대기 중일 때
+When admit(request, requested_slots=5, now) 하면
+Then A, B 만 선정된다.
+
+AC-QUE-005-4 입장 포기(취소) 시 슬롯 회수
+Given concurrency_limit=1 이고 A 가 ADMITTED, B 가 대기 중일 때
+When A 를 취소하면 availableSlots(now)=1 이 되고,
+When admit(now) 하면 B 가 선정된다.
+
+AC-QUE-005-5 정책 검증
+When concurrency_limit 이 0 또는 음수이면 정책 생성 시 입력 오류가 발생한다.
+
+AC-QUE-005-6 조회는 상태를 바꾸지 않는다
+Given concurrency_limit=1, lease_ttl=10분, A 가 T0 에 입장했을 때
+When T0+10분에 availableSlots 를 조회하면 1 을 반환하지만
+Then A 의 상태는 여전히 ADMITTED 다 (회수는 expireLeases/admit 에서만).
+```
+
+#### 결정 사항 (TASK-003 중 기록, 승인 필요)
+
+| ID | 결정 | 사유 |
+|---|---|---|
+| D-QUE-005-1 | 호출자가 인원을 명시하는 `admit(request_id, requested_slots, now)` 도 남은 슬롯으로 상한 제한한다 | "활성 입장 수 ≤ 상한" 불변조건을 호출 경로와 무관하게 보장. QUE-006(입장률)은 이 인자로 더 작은 값을 넘기는 식으로 결합한다 |
+| D-QUE-005-2 | `availableSlots(now)` 는 상태를 바꾸지 않고 `now` 기준 lease 유효 세션만 계산한다 | 조회 비변경 원칙(D-QUE-004-2) 유지. 회수(상태 전이)는 명시 연산에서만 |
+| D-QUE-005-3 | 슬롯 0 인 `admit` 도 멱등 키에 빈 결과를 기록한다 | 재전송 시 동일 응답을 보장. 호출자는 새 멱등 키로 다음 주기에 재시도한다 |
+
+#### 테스트
+
+- 단위 테스트: `backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java`
+
+---
+
+### QUE-007 heartbeat 및 입장 lease 관리
+
+| 항목 | 내용 |
+|---|---|
+| 요구사항 ID | QUE-007 |
+| 기능명 | 입장 lease 와 heartbeat 기반 슬롯 회수 |
+| 목적 | 입장한 사용자가 브라우저를 닫거나 네트워크가 끊겨도 동시 입장 슬롯을 영구 점유하지 않도록, 입장 권한을 TTL 이 있는 lease 로 관리하고 활동 신호(heartbeat)로 연장한다(설계서 7.3). |
+| 설명 | `QueuePolicy`에 `admission_lease_ttl`(양수)을 둔다. 세션이 `ADMITTED` 로 전이되는 순간 `last_seen_at` 을 입장 시각으로 갱신하며, lease 만료 시각은 `last_seen_at + admission_lease_ttl` 이다(별도 필드 없음). heartbeat 는 `WAITING`/`ADMITTED` 모두 `last_seen_at` 을 갱신하므로 입장 후 heartbeat 가 lease 를 연장한다. `expireLeases(now)` 는 `last_seen_at + lease_ttl <= now` 인 `ADMITTED` 세션을 `EXPIRED` 로 전이해 슬롯을 회수한다. 입장 후보 선정(`admit`)은 선정 직전에 `expireLeases` 를 먼저 수행한다. QUE-004 의 `expire(now)` 는 `WAITING` 만 다루는 경계(D-QUE-004-5)를 유지한다. |
+| 선행 조건 | `QueuePolicy` 유효(`admission_lease_ttl > 0`). |
+| 입력 | (정책) `admission_lease_ttl` / (연장) `waiting_session_id`, `now` / (회수) `now` |
+| 정상 처리 흐름 | 1) 입장: `ADMITTED`, `last_seen_at = now`. 2) heartbeat: `last_seen_at = now`(lease 연장), true. 3) `expireLeases(now)`: 조건 충족 `ADMITTED` 세션을 입장 순서대로 `EXPIRED` 처리하고 목록 반환. 4) 취소(QUE-003): `ADMITTED` → `CANCELLED`, 슬롯 즉시 회수. |
+| 예외 처리 | `admission_lease_ttl` ≤ 0 또는 null → 정책 생성 오류. 시각 null → 입력 오류. 종단 상태 세션의 heartbeat → false(QUE-004 와 동일). |
+| 상태 변화 | `ADMITTED` → `EXPIRED` (lease 만료). `EXPIRED` 는 종단 상태이며 재등록은 재진입 정책(QUE-004)을 따른다. |
+| 권한 | 없음(도메인). heartbeat 호출 주체 검증은 API 계층(Phase 3). |
+| 네트워크 Zone | DMZ (Queue Engine) |
+| 데이터 저장 위치 | Phase 1 메모리. Phase 2: lease 는 Redis key TTL 또는 ZSET score(QUE-008). |
+| 로그/감사 | 없음(도메인). lease 만료 건수는 지표. |
+| 성능 및 동시성 조건 | `expireLeases` 는 `ADMITTED` 세션 전체 O(m) 검사(heartbeat 순서와 입장 순서가 다름). Phase 2 에서는 ZSET 범위 조회. |
+| 보안 고려사항 | lease TTL 이 길면 이탈 사용자가 슬롯을 점유해 가용성이 떨어지고, 짧으면 정상 사용자가 끊긴다. 상·하한은 Control Plane 정책 검증(Phase 5). 입장 토큰(TOK)의 만료는 lease 와 별개 계약이며 Ingress 가 독립 검증한다(Phase 6). |
+| 연관 요구사항 | QUE-003, QUE-004, QUE-005, QUE-008, TOK-*, WUI-* |
+
+#### 수용 기준
+
+```text
+AC-QUE-007-1 lease 만료 시 EXPIRED 전이와 슬롯 회수
+Given concurrency_limit=1, lease_ttl=10분, A 가 T0 에 입장했을 때
+When T0+10분에 expireLeases 하면
+Then 반환 목록은 [A], A 는 EXPIRED, availableSlots=1 이다.
+
+AC-QUE-007-2 경계값
+Given A 가 T0 에 입장했을 때
+When T0+10분-1ns 에 expireLeases 하면 A 는 ADMITTED 를 유지하고,
+When T0+10분 에 expireLeases 하면 A 는 EXPIRED 가 된다 (last_seen_at + lease_ttl <= now).
+
+AC-QUE-007-3 heartbeat 로 lease 연장
+Given A 가 T0 에 입장하고 T0+8분에 heartbeat 했을 때
+When T0+10분에 expireLeases 하면 비어 있고,
+When T0+18분에 expireLeases 하면 [A] 다.
+
+AC-QUE-007-4 lease 는 입장 시각부터 시작한다
+Given A 가 T0 에 등록되어 대기하다가 T0+4분에 입장했을 때
+When T0+10분에 expireLeases 하면 A 는 ADMITTED 를 유지하고 last_seen_at=T0+4분이며,
+When T0+14분에 expireLeases 하면 A 는 EXPIRED 가 된다.
+
+AC-QUE-007-5 입장 선정 전 lease 회수
+Given concurrency_limit=1, A 가 T0 에 입장하고 B 가 대기 중일 때
+When T0+10분에 새 요청으로 admit(now) 하면
+Then B 가 선정되고 A 는 EXPIRED 다.
+
+AC-QUE-007-6 lease 만료 세션의 재진입
+Given A 의 lease 가 만료되어 EXPIRED 일 때
+When reentry=ALLOW 이면 재등록은 REGISTERED(맨 뒤) 이고,
+When reentry=DENY 이면 REENTRY_DENIED 이며 EXPIRED 로 남는다.
+
+AC-QUE-007-7 정책 검증
+When admission_lease_ttl 이 0, 음수, null 이면 정책 생성 시 입력 오류가 발생한다.
+
+AC-QUE-007-8 대기 만료(expire)는 ADMITTED 를 건드리지 않는다
+Given waiting_ttl=5분, lease_ttl=10분, A 가 T0 에 입장했을 때
+When T0+5분에 expire 하면 비어 있고 A 는 ADMITTED 다.
+```
+
+#### 결정 사항 (TASK-003 중 기록, 승인 필요)
+
+| ID | 결정 | 사유 |
+|---|---|---|
+| D-QUE-007-1 | lease 만료 시각은 별도 필드 없이 `last_seen_at + admission_lease_ttl` 로 계산하고, 입장 시 `last_seen_at` 을 입장 시각으로 갱신한다 | 대기 TTL(QUE-004)과 같은 구조라 모델이 단순해지고 Redis 구현(ZSET score 하나)과도 일치한다. Waiting Room 이 만료 시각을 보여줘야 하면 정책 값으로 계산 가능 |
+| D-QUE-007-2 | lease 만료 상태는 별도 상태를 두지 않고 `EXPIRED` 를 재사용한다 | 상태 수를 늘리지 않는다. "대기 만료"와 "입장 만료"를 사용자 안내에서 구분해야 하면 Phase 3 에서 `LEASE_EXPIRED` 분리 검토(소유자 결정 요청) |
+| D-QUE-007-3 | `expire(now)`(WAITING, QUE-004)와 `expireLeases(now)`(ADMITTED, QUE-007)를 별도 연산으로 두고 `admit` 은 둘을 모두 선행 호출한다 | D-QUE-004-5 경계를 유지하고, 지표(대기 만료 vs lease 만료)를 분리 집계할 수 있다 |
+| D-QUE-007-4 | lease 는 Queue Engine 내부의 슬롯 점유 개념이며 입장 토큰(TOK)의 만료·검증과 독립이다 | 토큰 계약은 Phase 6 승인 사항. 도메인이 토큰 수명을 가정하지 않는다 |
+
+#### 테스트
+
+- 단위 테스트: `backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java` (QUE-005/007), 기존 `WaitingQueueTest`·`WaitingSessionLifecycleTest` (정책 생성자 인자 추가, 검증 내용 불변)

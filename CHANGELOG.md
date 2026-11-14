@@ -5,6 +5,7 @@
 ## [Unreleased]
 
 ### Added
+- TASK-003 (Phase 1): QUE-005 동시 입장 상한 기반 입장 가능 인원 계산, QUE-007 입장 lease·heartbeat 슬롯 회수 (단위 테스트 65건)
 - TASK-002 (Phase 1): QUE-003 대기 세션 생성·조회·취소, QUE-004 만료(TTL)·heartbeat·재접속·재진입 정책 (단위 테스트 50건)
 - `docs/PROGRESS.md` 재개 지점 문서
 - TASK-001: GitHub 이관(`byung8lim/openqueue`), CI 최초 실행 성공(backend-verify, secret-scan), Dependabot 최초 실행
