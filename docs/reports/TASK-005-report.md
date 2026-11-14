@@ -59,9 +59,9 @@ cd backend && mvn -B -ntp -Pintegration verify         # CI redis-integration �
 |---|---|---|
 | 로컬 1차 | Checkstyle LineLength 4건 → 줄바꿈 수정(동작 불변) | 콘솔 |
 | 로컬 최종 | 도메인 **76/76**, 인프라 단위 **9/9**, BUILD SUCCESS | `docs/test/evidence/TASK-005-local-verify.log` |
-| 통합 `RedisWaitingQueueIT` 15건 | **로컬 미실행**(Docker 없음). 컴파일은 통과. CI 푸시 후 `redis-integration` 잡 결과로 확정 | GitHub Actions |
+| 통합 `RedisWaitingQueueIT` 15건 | 로컬 미실행(Docker 없음). **CI redis-integration 잡 성공**(failsafe verify 포함, Redis 7.4 컨테이너) | [CI run 43571183051](https://github.com/byung8lim/openqueue/actions/runs/43571183051) |
 
-**미실행 위험**: Lua 스크립트 논리 오류(문법·키 인덱스·경계 부등호)는 로컬에서 잡히지 않는다. CI 잡이 실패하면 스크립트를 수정하고 다시 푸시한다. CI 통과 전까지 QUE-008 검증 상태는 `진행중`이다.
+CI 통과로 QUE-008 검증 상태를 `통과(통합)`으로 갱신했다. 잔여 미검증: TLS 실연결, ACL 권한 축소 계정, Sentinel/Cluster failover(Phase 7).
 
 ## 10. 정적 분석 결과
 Checkstyle 0건(두 모듈), SpotBugs 0건(두 모듈), enforcer: 의존성 수렴 통과, 도메인 순수성 통과, **DMZ 경계(DB 드라이버·Flyway·control-api 금지) 통과**. `-Xlint:all -Werror` 경고 0건.
@@ -74,7 +74,7 @@ Checkstyle 0건(두 모듈), SpotBugs 0건(두 모듈), enforcer: 의존성 수�
 - 잔여: TLS 실연결·ACL 권한 축소 계정은 서버 환경에서 검증(Phase 7).
 
 ## 12. 미해결 사항
-- **CI `redis-integration` 결과 확인** 후 추적표 QUE-008 상태를 `통과(통합)` 으로 갱신해야 한다.
+- (해결) CI redis-integration 통과, 추적표 갱신 완료.
 - 승인 요청: D-QUE-008-1~7, 포트 위치(domain vs application), Phase 1 결정 전체(D-QUE-001~007).
 - Dependabot 이 lettuce/testcontainers 갱신 PR 을 올릴 것 — 메이저 변경은 통합 테스트 통과 후 병합.
 
