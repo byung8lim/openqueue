@@ -1,0 +1,22 @@
+# MockMvc 테스트: 스케줄러 끔(결정적), SSE 주기 짧게, 쿠키 Secure 유지(헤더 검증).
+openqueue:
+  store: MEMORY
+  admission:
+    enabled: false
+  sse:
+    interval: 20ms
+    timeout: 5s
+  rate-limit:
+    requests-per-minute: 100000
+  cookie:
+    secure: true
+  queues:
+    - site-id: shop
+      queue-id: main
+      failure-policy: FAIL_CLOSED
+      policy:
+        waiting-session-ttl: 5m
+        reentry: DENY
+        concurrency-limit: 1
+        admission-lease-ttl: 10m
+        rate-max-admissions: 0

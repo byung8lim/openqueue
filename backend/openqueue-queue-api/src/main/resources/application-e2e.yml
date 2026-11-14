@@ -1,0 +1,19 @@
+# Playwright E2E 전용(CI): 메모리 저장소, 동시 입장 1명·lease 짧게 → 대기 → 입장 전이를 빠르게 관찰한다. 운영에서 사용 금지.
+openqueue:
+  store: MEMORY
+  cookie:
+    secure: false
+  admission:
+    enabled: true
+    interval: 500ms
+  sse:
+    interval: 500ms
+  queues:
+    - site-id: demo
+      queue-id: main
+      policy:
+        waiting-session-ttl: 2m
+        reentry: ALLOW
+        concurrency-limit: 1
+        admission-lease-ttl: 3s
+        rate-max-admissions: 0

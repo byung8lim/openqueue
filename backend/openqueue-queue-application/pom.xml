@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  openqueue-queue-application (모듈 M02의 application 계층)
+
+  - 대기 등록·조회·heartbeat·취소·입장 주기 유스케이스. 시계(Clock)·난수(SecureRandom) 주입, 세션 ID 생성.
+  - 배치 Zone: DMZ (Queue Engine 프로세스에 포함)
+  - 경계 규칙: 프레임워크·I/O 의존 금지(도메인과 같은 enforcer). HTTP·Redis 세부는 api/infrastructure 모듈 책임.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.wbl.openqueue</groupId>
+        <artifactId>openqueue-backend</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>openqueue-queue-application</artifactId>
+    <name>OpenQueue Queue Application</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.wbl.openqueue</groupId>
+            <artifactId>openqueue-queue-domain</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <!-- application 계층 경계: 도메인 모듈 외 compile/runtime 의존성 금지 -->
+                        <id>enforce-application-boundary</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <exclude>*:*:*:*:compile</exclude>
+                                        <exclude>*:*:*:*:runtime</exclude>
+                                    </excludes>
+                                    <includes>
+                                        <include>com.wbl.openqueue:openqueue-queue-domain</include>
+                                    </includes>
+                                    <message>openqueue-queue-application 은 도메인 모듈 외 외부 의존성을 가질 수 없습니다. (module-design.md §3)</message>
+                                </bannedDependencies>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

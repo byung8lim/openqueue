@@ -59,6 +59,10 @@ ID는 한 번 부여하면 재사용하지 않는다. 폐기된 요구사항은 
 | QUE-007 | heartbeat 및 입장 lease 관리 | 7.3 | 1, 2 | **검토중** (상세 §3 도메인 부분, TASK-003; Redis 부분은 Phase 2) |
 | QUE-008 | Redis Lua 기반 원자적 등록·입장 할당. Standalone/Sentinel/Cluster 공통 key 설계(hash tag), failover 초과 입장 방지 | 7.3, ADR-0004 | 2 | **검토중** (상세 §3, TASK-005; failover 검증은 Phase 7) |
 | QUE-009 | 사이트별 Fail-open/Fail-closed 정책 적용. **기본값 Fail-closed**, 사이트별 변경 가능 | SEC-11, 12.2, DEC-09 | 2 | **검토중** (상세 §3, TASK-005; Gateway 분기는 Phase 4) |
+| QUE-010 | Waiting Room 유스케이스(등록·조회·heartbeat·취소·입장 주기 실행)와 안전한 세션 ID 발급 | 9.3, 7.3 | 3 | 검토중 (상세 §3, TASK-006) |
+| QUE-011 | Queue API: 등록·상태 조회·취소·heartbeat 엔드포인트, 입력 검증, ProblemDetail 오류 규약 | 9.3 | 3 | 검토중 (상세 §3, `docs/api/queue-api.md`) |
+| QUE-012 | 세션 쿠키(HttpOnly/Secure/SameSite) 및 사용자 요청 rate limit | 7.3, 12 | 3 | 검토중 (상세 §3) |
+| QUE-013 | SSE 상태 스트림(주기 갱신·heartbeat 겸용·gone 이벤트·자동 재접속) | DEC-05 | 3 | 검토중 (상세 §3) |
 
 ### 2.3 그 외 영역 (상세화 예정)
 
@@ -82,8 +86,8 @@ ID는 한 번 부여하면 재사용하지 않는다. 폐기된 요구사항은 
 | ADM-004 | 시스템 기본 Admin(내장 계정) id/password: 최초 부트업 시 `initpassword.txt` 생성(0600), 최초 로그인 시 변경 강제, 변경 후 파일 삭제 | 5 | 초안 (DEC-07 승인, ADR-0006) |
 | ADM-002 | Site/Service/Queue/Routing Policy CRUD | 5 | 초안 |
 | ADM-003 | 관리자 작업 감사 로그 | 5 | 초안 |
-| WUI-001 | 대기 순번·예상 대기시간 표시 및 SSE 갱신 | 3 | 초안 |
-| WUI-002 | 새로고침/재접속 시 세션 복구 및 만료 안내 | 3 | 초안 |
+| WUI-001 | 대기 순번·예상 대기시간 표시 및 SSE 갱신 | 3 | 검토중 (TASK-006, 예상 대기시간은 클라이언트 추정) |
+| WUI-002 | 새로고침/재접속 시 세션 복구 및 만료 안내 | 3 | 검토중 (TASK-006) |
 | DB-001 | MariaDB 스키마 Flyway 관리, SQL 파일 분리 | 5 | 초안 |
 | OBS-001 | 요청 ID/상관관계 ID 부여 및 구조화 로그 | 4 | 초안 |
 | OPS-001 | Zone별 분리 설치 패키지 | 7 | 초안 |
@@ -608,3 +612,77 @@ AC-QUE-009-3 (Phase 4) Gateway 는 FAIL_CLOSED 사이트에서 저장소 장애 
 
 - 단위: `FailurePolicyTest`(AC-QUE-009-2), `RedisConnectionFactoryTest.unreachableHostIsReportedAsUnavailable`(AC-QUE-009-1)
 - AC-QUE-009-3 은 Phase 4 Gateway 테스트
+
+### QUE-010 Waiting Room 유스케이스 및 세션 ID 발급
+
+| 항목 | 내용 |
+|---|---|
+| 기능명 | `WaitingRoomService`(application 모듈): join/status/heartbeat/leave, `AdmissionCycle`(입장 주기), `SessionIdGenerator` |
+| 목적 | 도메인 포트 `QueueOperations` 를 API 가 쓰기 쉬운 유스케이스로 묶고, 시계(`Clock`)·대기열 레지스트리·세션 ID 발급을 한곳에서 다룬다. |
+| 설명 | join: 쿠키 세션이 이 대기열에 등록돼 있으면 재진입(QUE-004), 아니면 새 ID 발급 후 등록. status 는 상태 불변. heartbeat/leave 는 QUE-007/003 위임. AdmissionCycle 은 설정 주기마다 만료 회수→lease 회수→입장 선정(QUE-001/005/006)을 대기열별로 실행한다. |
+| 예외 처리 | 미운영 대기열 → `UnknownQueueException`(API 404). 저장소 불가 → `QueueUnavailableException` 전파(API 503). |
+| 보안 고려사항 | 세션 ID: SecureRandom ≥128bit, base64url. 클라이언트 제시 미등록 ID 는 절대 재사용하지 않음(D-API-005, 세션 고정 방지). |
+| 연관 요구사항 | QUE-001~009, QUE-011, SEC-002 |
+
+```text
+AC-QUE-010-1 쿠키 없이 join 하면 새 세션이 WAITING 으로 등록되고 position=waitingCount 가 된다.
+AC-QUE-010-2 등록된 세션 ID 로 다시 join 하면 같은 ID 가 유지되고 새 세션이 만들어지지 않는다.
+AC-QUE-010-3 미등록 ID 로 join 하면 그 ID 가 아닌 새 ID 가 발급된다.
+AC-QUE-010-4 생성된 세션 ID 는 base64url 문자만 포함하고 길이 ≥22, 연속 발급 시 중복이 없다.
+AC-QUE-010-5 AdmissionCycle 1회 실행 후 concurrencyLimit 만큼 FIFO 순으로 ADMITTED 가 된다.
+```
+
+### QUE-011 Queue API 엔드포인트 및 오류 규약
+
+| 항목 | 내용 |
+|---|---|
+| 기능명 | `SessionController`, `ApiExceptionHandler`, `ApiErrors`, `RequestIdFilter`(api 모듈, Spring Boot 3.5) |
+| 설명 | 계약 전문: `docs/api/queue-api.md` §1~2. 경로 식별자는 도메인 형식 검증(D-QUE-001-3), 오류는 RFC 9457 ProblemDetail + `QUE-*` 코드, 모든 응답에 `X-Request-Id`. |
+| 네트워크 Zone | DMZ. api 모듈은 MariaDB 드라이버·내부 자격증명 의존 금지(enforcer, NET-006). |
+| 로그/감사 | 오류 로그는 event·requestId 만. 세션 ID·입력 원문·스택 미노출(SEC-001). |
+| 연관 요구사항 | QUE-010, QUE-012, QUE-013, SEC-001, SEC-002, OBS-001 |
+
+```text
+AC-QUE-011-1 POST 는 200 과 Set-Cookie 를 반환하고 본문 status=WAITING 이다(본문에 세션 ID 없음).
+AC-QUE-011-2 쿠키 없는 GET/DELETE/heartbeat 는 401 QUE-SESSION-001 이다.
+AC-QUE-011-3 알 수 없는 세션 쿠키는 404 QUE-SESSION-002, 미운영 대기열은 404 QUE-QUEUE-001 이다.
+AC-QUE-011-4 형식 위반 식별자는 400 QUE-INPUT-001 이며 응답 본문에 입력 원문이 없다.
+AC-QUE-011-5 저장소 예외는 503 QUE-STORE-001 이며 메시지·스택이 노출되지 않는다.
+AC-QUE-011-6 모든 응답에 X-Request-Id 가 있고, 요청이 보낸 값(형식 검증 통과 시)을 되돌려 준다.
+```
+
+### QUE-012 세션 쿠키 및 사용자 rate limit
+
+| 항목 | 내용 |
+|---|---|
+| 기능명 | `SessionCookie`, `RateLimitFilter` |
+| 설명 | 쿠키 속성은 D-API-001. rate limit 은 D-API-003(주소별 분당 고정 창, 기본 120, 초과 시 429 + Retry-After). |
+| 보안 고려사항 | HttpOnly 로 XSS 시 세션 탈취 완화, SameSite=Lax 로 CSRF 완화, Path 제한. 프록시 헤더를 신뢰하지 않는다. |
+| 연관 요구사항 | QUE-011, SEC-002, GAT-* (Phase 4 가 신뢰 프록시·분산 제한 담당) |
+
+```text
+AC-QUE-012-1 발급 쿠키는 HttpOnly·Secure·SameSite=Lax·Path=/queue/ 를 가진다.
+AC-QUE-012-2 분당 상한을 초과한 요청은 429 QUE-RATE-001 과 Retry-After 를 받고, 다음 분에는 다시 허용된다.
+AC-QUE-012-3 서로 다른 클라이언트 주소는 창을 공유하지 않는다.
+```
+
+### QUE-013 SSE 상태 스트림
+
+| 항목 | 내용 |
+|---|---|
+| 기능명 | `SseStatusStreamer` |
+| 설명 | `GET …/session/events`: 주기마다 `status` 이벤트(SessionResponse)를 보내며 heartbeat 를 겸한다(D-API-002). 세션이 사라지면 `gone` 후 종료. timeout 뒤 서버가 닫고 클라이언트가 재접속한다. 가상 스레드로 장기 연결 수용. |
+| 성능 및 동시성 조건 | 연결당 스케줄 작업 1개, 종료·오류·timeout 시 반드시 취소. |
+| 연관 요구사항 | QUE-010, QUE-011, WUI-001, WUI-002, DEC-05 |
+
+```text
+AC-QUE-013-1 스트림을 열면 첫 status 이벤트가 즉시 오고 lastSeenAt 이 갱신된다.
+AC-QUE-013-2 세션이 없으면 gone 이벤트 후 스트림이 완료된다.
+AC-QUE-013-3 스트림이 닫히면(클라이언트 종료·timeout) 주기 작업이 취소된다.
+```
+
+#### Phase 3 결정 사항
+
+D-API-001~006: `docs/api/queue-api.md` §3 (사후 승인 요청, API 계약 I1).
+
+---

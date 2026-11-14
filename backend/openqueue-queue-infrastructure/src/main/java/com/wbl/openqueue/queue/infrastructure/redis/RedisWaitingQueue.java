@@ -35,7 +35,8 @@ import java.util.function.Supplier;
  * <p>장애 처리(QUE-009): 연결 실패·타임아웃은 {@link QueueUnavailableException} 으로 바꿔 던진다. 어댑터는 자동 재시도하지 않는다.
  * 모든 변경 연산이 멱등(등록·heartbeat·취소는 재실행 안전, 입장은 멱등 키)이므로 재시도 여부는 호출자가 정책에 따라 결정한다(D-QUE-008-5).
  *
- * <p>스레드 안전성: 이 객체는 연결 하나를 감싼다. 연결별로 인스턴스를 만들어 쓴다.
+ * <p>스레드 안전성: Lettuce 의 공유 연결은 스레드 안전하며 이 객체도 상태를 갖지 않으므로(SHA 캐시는 동시 접근 허용)
+ * 여러 요청 스레드가 하나의 인스턴스를 공유할 수 있다.
  */
 public final class RedisWaitingQueue implements QueueOperations {
 

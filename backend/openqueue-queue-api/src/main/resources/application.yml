@@ -1,0 +1,63 @@
+# OpenQueue Queue API 기본 설정 (DMZ Queue Engine). 운영 값은 프로파일/환경변수로 덮어쓴다.
+# 비밀정보(Redis 비밀번호)는 이 파일에 쓰지 않고 OPENQUEUE_REDIS_PASSWORD 환경변수로 주입한다.
+server:
+  port: 8080
+  shutdown: graceful
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-exception: false
+
+spring:
+  application:
+    name: openqueue-queue-api
+  threads:
+    virtual:
+      enabled: true   # SSE 장기 연결을 가상 스레드로 수용
+  mvc:
+    async:
+      request-timeout: 330000   # SSE timeout(5m) 보다 길게
+  jackson:
+    default-property-inclusion: non_null
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+openqueue:
+  store: MEMORY            # 운영: REDIS
+  redis:
+    host: ${OPENQUEUE_REDIS_HOST:localhost}
+    port: ${OPENQUEUE_REDIS_PORT:6379}
+    tls: ${OPENQUEUE_REDIS_TLS:true}
+    username: ${OPENQUEUE_REDIS_USERNAME:queue-engine}
+    password: ${OPENQUEUE_REDIS_PASSWORD:}
+    command-timeout: 2s
+    terminal-session-retention: 1h
+    admission-result-retention: 10m
+  admission:
+    enabled: true
+    interval: 1s
+  sse:
+    interval: 2s
+    timeout: 5m
+  rate-limit:
+    requests-per-minute: 120
+  cookie:
+    name: oq_session
+    secure: true
+  queues:
+    - site-id: demo
+      queue-id: main
+      failure-policy: FAIL_CLOSED
+      policy:
+        waiting-session-ttl: 5m
+        reentry: ALLOW
+        concurrency-limit: 100
+        admission-lease-ttl: 10m
+        rate-max-admissions: 0

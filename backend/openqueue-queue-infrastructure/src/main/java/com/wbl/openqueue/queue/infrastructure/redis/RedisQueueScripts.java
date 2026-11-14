@@ -3,19 +3,20 @@ package com.wbl.openqueue.queue.infrastructure.redis;
 import io.lettuce.core.RedisNoScriptException;
 import io.lettuce.core.ScriptOutputType;
 import io.lettuce.core.api.sync.RedisCommands;
-import java.util.EnumMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Lua 스크립트를 EVALSHA 로 실행하고 SHA 를 캐시한다.
  *
  * <p>Redis 재시작·failover 로 스크립트 캐시가 비면 {@code NOSCRIPT} 오류가 나므로, 그때 한 번 SCRIPT LOAD 후 재시도한다.
- * 스크립트 본문은 매 호출마다 전송하지 않는다(네트워크 비용). 이 클래스는 연결 하나에 묶여 쓰이며 스레드 안전하지 않다.
+ * 스크립트 본문은 매 호출마다 전송하지 않는다(네트워크 비용). Lettuce 공유 연결은 스레드 안전하므로 SHA 캐시도 동시 접근을 허용한다
+ * (여러 요청 스레드가 같은 어댑터 인스턴스를 쓴다).
  */
 final class RedisQueueScripts {
 
     private final RedisCommands<String, String> redis;
-    private final Map<LuaScript, String> shaCache = new EnumMap<>(LuaScript.class);
+    private final Map<LuaScript, String> shaCache = new ConcurrentHashMap<>();
 
     RedisQueueScripts(RedisCommands<String, String> redis) {
         this.redis = redis;

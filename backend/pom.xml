@@ -21,7 +21,9 @@
 
     <modules>
         <module>openqueue-queue-domain</module>
+        <module>openqueue-queue-application</module>
         <module>openqueue-queue-infrastructure</module>
+        <module>openqueue-queue-api</module>
     </modules>
 
     <properties>
@@ -32,6 +34,8 @@
 
         <!-- 런타임 의존성 (Phase 2: Redis 클라이언트. 버전은 Maven Central 2026-11-14 기준 최신 6.x 안정판) -->
         <lettuce.version>6.9.0.RELEASE</lettuce.version>
+        <!-- Phase 3: Queue API (Spring Boot 3.5 LTS 계열, 2026-11-14 기준 최신 패치) -->
+        <spring-boot.version>3.5.16</spring-boot.version>
 
         <!-- 테스트 의존성 -->
         <junit-jupiter.version>5.13.4</junit-jupiter.version>
@@ -78,6 +82,14 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- Spring Boot BOM 은 마지막에 둔다: 위에서 고정한 JUnit/AssertJ/Lettuce/Testcontainers 버전이 우선한다. -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -90,6 +102,8 @@
                     <version>${maven-compiler-plugin.version}</version>
                     <configuration>
                         <release>${maven.compiler.release}</release>
+                        <!-- Spring MVC 6.1+ 가 @PathVariable 등 파라미터 이름을 리플렉션으로 읽으려면 -parameters 가 필요하다. -->
+                        <parameters>true</parameters>
                         <compilerArgs>
                             <arg>-Xlint:all</arg>
                             <arg>-Werror</arg>

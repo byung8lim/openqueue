@@ -1,6 +1,6 @@
 # 요구사항-테스트 추적표
 
-- 갱신: 2026-11-14 (TASK-005, Phase 2 완료 — CI redis-integration 통과)
+- 갱신: 2026-11-15 (TASK-006, Phase 3 — 로컬 게이트 통과, E2E 는 CI 확인 대기)
 - 명세 상태: 초안 / 검토중 / 승인 · 검증 상태: 미착수 / 진행중 / 통과 / 실패
 - **코드가 존재한다는 사실만으로 요구사항이 구현된 것으로 간주하지 않는다.** 검증 상태 `통과`는 테스트 증거가 있을 때만 쓴다.
 
@@ -22,4 +22,11 @@
 | QUE-008 | 검토중 | redis-keys.md | 동일 | AC-QUE-008-3~6 / `RedisWaitingQueueIT` (15건, Testcontainers) | 통과 (통합, CI Redis 7 컨테이너) | [CI run 43571183051](https://github.com/byung8lim/openqueue/actions/runs/43571183051) |
 | QUE-009 | 검토중 | SRS §3 QUE-009 | `FailurePolicy`, `QueueUnavailableException`, `RedisConnectionFactory.open` | AC-QUE-009-1~2 / `FailurePolicyTest`, `RedisConnectionFactoryTest` | 통과 (단위) · AC-QUE-009-3 은 Phase 4 | 동일 |
 | NET-003, NET-006 | 초안 | redis-keys.md §4, module-design.md | `RedisConnectionSettings`(ACL 필수·TLS 검증 강제), infrastructure pom enforcer(DB 드라이버 금지) | `RedisConnectionFactoryTest`, enforcer BannedDependencies | 부분 통과 (설정·빌드 규칙만, 네트워크 검증 미착수) | 동일 |
-| SEC-002, GAT-*, TOK-*, POL-*, ADM-*, WUI-*, DB-*, OBS-*, OPS-*, NFR-* | 초안 | SRS §2.3 | - | - | 미착수 | - |
+| QUE-010 | 검토중 | SRS §3 QUE-010 | `openqueue-queue-application` / `WaitingRoomService`, `AdmissionCycle`, `SessionIdGenerator`, `InMemoryQueueRegistry` | AC-QUE-010-1~5 / `WaitingRoomServiceTest`, `SessionIdGeneratorTest` (10건) | 통과 (단위) | TASK-006 보고서 §9 |
+| QUE-011 | 검토중 | api/queue-api.md, SRS §3 QUE-011 | `openqueue-queue-api` / `SessionController`, `ApiExceptionHandler`, `ApiErrors`, `RequestIdFilter` | AC-QUE-011-1~6 / `SessionControllerTest` (9건, MockMvc) | 통과 (단위) | TASK-006 보고서 §9 |
+| QUE-012 | 검토중 | api/queue-api.md D-API-001/003 | `SessionCookie`, `RateLimitFilter` | AC-QUE-012-1~3 / `SessionControllerTest.joinIssuesHardenedCookie…`, `RateLimitFilterTest` | 통과 (단위) | TASK-006 보고서 §9 |
+| QUE-013 | 검토중 | api/queue-api.md D-API-002 | `SseStatusStreamer` | AC-QUE-013-1~2 / `SessionControllerTest.sseStreams…`, `sseRequiresSession`; AC-QUE-013-3 (작업 취소) | 통과 (단위, AC-3 미검증) | TASK-006 보고서 §9 |
+| QUE-009 (API 계층) | 검토중 | SRS §3 QUE-009, D-API-004 | `ApiExceptionHandler.storeUnavailable`, `AdmissionScheduler` | `StoreUnavailableTest` (503·Retry-After·비노출) | 통과 (단위) | TASK-006 보고서 §9 |
+| WUI-001 | 검토중 | api/queue-api.md, frontend/waiting-room-web/README.md | `frontend/waiting-room-web` / `WaitingRoom`, `useWaitingSession`, `waitEstimate`, `queueApi` | `WaitingRoom.test.tsx`, `waitEstimate.test.ts`, `queueApi.test.ts` (22건); E2E `waiting-room.spec.ts` (4건, CI) | 통과 (단위) · E2E 미실행 | TASK-006 보고서 §9 |
+| WUI-002 | 검토중 | 동일 | 동일 (gone/만료/취소/재진입 거부 안내, 재등록, 쿠키 복구) | `WaitingRoom.test.tsx` (gone→재등록, 복구, 재진입 거부, 취소); E2E 새로고침 복구 | 통과 (단위) · E2E 미실행 | TASK-006 보고서 §9 |
+| SEC-002, GAT-*, TOK-*, POL-*, ADM-*, DB-*, OBS-*, OPS-*, NFR-* | 초안 | SRS §2.3 | - | - | 미착수 | - |

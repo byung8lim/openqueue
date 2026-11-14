@@ -3,7 +3,7 @@
 # - github-actions: CI Action을 커밋 SHA로 고정(OD-04)했으므로 새 버전의 SHA·버전 주석 갱신 PR을 자동 생성한다.
 # - maven: backend 의존성의 알려진 취약점(CVE) 알림 및 업그레이드 PR (OD-05 권고안 1단계).
 #   현재 런타임 의존성은 없고 테스트·플러그인 의존성만 검사된다.
-# - npm(frontend/*)은 Phase 3에서 package.json이 생길 때 추가한다.
+# - npm(frontend/waiting-room-web): Phase 3에서 추가. 메이저 갱신은 로컬 검증 후 병합(PROGRESS §3).
 # - CI의 Trivy 스캔(OD-05 2단계)은 Phase 2에서 비차단으로 추가하고 Phase 7에서 차단으로 전환한다.
 # 동작은 GitHub 최초 푸시 후 확인한다(TASK-001).
 version: 2
@@ -17,6 +17,14 @@ updates:
 
   - package-ecosystem: maven
     directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build(OD-05)"
+
+  - package-ecosystem: npm
+    directory: /frontend/waiting-room-web
     schedule:
       interval: weekly
     open-pull-requests-limit: 5

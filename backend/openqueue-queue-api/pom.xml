@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  openqueue-queue-api (모듈 M02/M03 실행 모듈: Queue Engine 프로세스의 공개 Queue API)
+
+  - 대기 등록·상태 조회·heartbeat·취소 REST API, SSE 상태 스트림, 입장 주기 스케줄러, 사용자 요청 rate limit.
+  - 배치 Zone: DMZ. 공개 API(/queue/v1)만 제공하며 관리 API(/control/v1)는 같은 프로세스에 두지 않는다(error-and-logging-conventions.md §1).
+  - 경계 규칙: DB 드라이버·Flyway·control-api 의존 금지(enforcer). 정책은 설정(Phase 3) → 서명 스냅샷(Phase 6)으로만 들어온다.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.wbl.openqueue</groupId>
+        <artifactId>openqueue-backend</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>openqueue-queue-api</artifactId>
+    <name>OpenQueue Queue API</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.wbl.openqueue</groupId>
+            <artifactId>openqueue-queue-application</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wbl.openqueue</groupId>
+            <artifactId>openqueue-queue-infrastructure</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring-boot.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <!-- DMZ 경계: 내부 DB 드라이버·migration·관리망 모듈 금지 (NET-001, NET-006) -->
+                        <id>enforce-dmz-boundary</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <exclude>org.mariadb.jdbc:*</exclude>
+                                        <exclude>mysql:*</exclude>
+                                        <exclude>com.mysql:*</exclude>
+                                        <exclude>org.flywaydb:*</exclude>
+                                        <exclude>org.springframework:spring-jdbc</exclude>
+                                        <exclude>org.springframework.boot:spring-boot-starter-jdbc</exclude>
+                                        <exclude>org.springframework.boot:spring-boot-starter-data-jpa</exclude>
+                                        <exclude>com.wbl.openqueue:openqueue-control-api</exclude>
+                                    </excludes>
+                                    <message>DMZ 모듈(openqueue-queue-api)은 DB 드라이버·Flyway·JDBC·control-api 에 의존할 수 없습니다. (module-design.md §2)</message>
+                                </bannedDependencies>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

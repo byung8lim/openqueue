@@ -4,4 +4,20 @@
   규칙: 항목을 추가할 때는 사유와 승인자를 주석으로 남긴다. 사유 없는 예외 추가 금지.
 -->
 <FindBugsFilter>
+    <!--
+      사유: SecureRandom 은 의도적으로 생성자 주입(테스트 결정성)하며 복사가 불가능한 상태 객체다.
+      외부에서 같은 인스턴스를 쥐고 있어도 난수 품질에 영향이 없다. 추가: TASK-006 (Phase 3), 사후 승인 대상.
+    -->
+    <Match>
+        <Class name="com.wbl.openqueue.queue.application.SessionIdGenerator"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <!--
+      사유: X-Request-Id 는 정규식 ^[A-Za-z0-9_-]{8,64}$ 로 허용 목록 검증을 통과한 값만 되돌려 주므로 CRLF 등 헤더 주입이 불가능하다.
+      SpotBugs 는 정규식 검증을 추적하지 못해 오탐을 낸다. 추가: TASK-006 (Phase 3), 사후 승인 대상.
+    -->
+    <Match>
+        <Class name="com.wbl.openqueue.queue.api.web.RequestIdFilter"/>
+        <Bug pattern="HRS_REQUEST_PARAMETER_TO_HTTP_HEADER"/>
+    </Match>
 </FindBugsFilter>

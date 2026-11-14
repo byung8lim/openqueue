@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/waitingroom.test.tsx","./src/waitingroom.tsx","./src/main.tsx","./src/usewaitingsession.ts","./src/waitestimate.test.ts","./src/waitestimate.ts","./src/api/queueapi.test.ts","./src/api/queueapi.ts","./src/test/setup.ts","./vite.config.ts"],"version":"5.9.3"}
