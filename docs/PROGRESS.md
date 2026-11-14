@@ -4,7 +4,7 @@
 
 - 마지막 갱신: **2026-11-15** (TASK-006 종료 · **Phase 3 로컬 게이트 통과**, CI frontend-e2e 확인 대기)
 - 현재 Phase: **Phase 4 — Edge Gateway·동적 라우팅** (착수 전, 단위 작업 목록은 `docs/CHECKPOINT.md`)
-- 마지막 완료 작업: **TASK-006** (QUE-010~013, WUI-001/002) — mvn verify 통과(단위 59건 집계), Vitest 22건 통과, Playwright E2E 4건은 CI 전용
+- 마지막 완료 작업: **TASK-006** (QUE-010~013, WUI-001/002) — mvn verify 통과(JUnit testcase 106건), Vitest 22건 통과, Playwright E2E 4건은 CI 전용
 - 저장소: https://github.com/byung8lim/openqueue (`main`). CI 전부 성공: https://github.com/byung8lim/openqueue/actions/runs/43571183051
 - 절차: 2026-11-15 부터 **토큰 효율 절차**(`docs/claude.md` §3.4) — 단위 작업은 테스트 코드+구현만 작성하고 실행 없음, `mvn verify` 는 Phase 말 1회, 단위 작업마다 `docs/CHECKPOINT.md` 갱신, 보고서는 Phase 당 1건. 결정은 기록 후 구현(사후 승인).
 

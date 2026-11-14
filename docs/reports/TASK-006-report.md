@@ -42,8 +42,8 @@
    cd backend && mvn -B -ntp -q clean verify ; mvn -B -ntp -q verify -pl openqueue-queue-api -am (수정 반복 후 최종)
    cd frontend/waiting-room-web && npm install && npx tsc -b && npx vitest run
 9. 실제 테스트 결과 (2026-11-15 로컬, Windows):
-   - mvn verify: BUILD SUCCESS. surefire 집계 domain 29 / infrastructure 9 / application 10 / api 11 실행, 실패 0, 오류 0
-     (domain 의 ParameterizedTest 는 파일 집계 기준). Redis 통합(IT)은 CI -Pintegration 에서 실행.
+   - mvn verify: BUILD SUCCESS. JUnit testcase 106건 실행(surefire XML 기준; 클래스 집계로는 domain 29 / infrastructure 9 /
+     application 10 / api 11), 실패 0, 오류 0. Redis 통합(IT)은 CI -Pintegration 에서 실행.
    - Vitest: 3 파일 22건 통과. tsc: 오류 없음.
    - Playwright E2E: 로컬 미실행(Docker/브라우저 설치 없음, 정책상 CI 전용) → CI frontend-e2e 잡 결과로 확인. 미실행이므로 통과로 보고하지 않음.
    - 게이트 중 수정한 결함: Optional 빈 destroyMethod 로 컨텍스트 실패 → @ConditionalOnProperty 로 분리; -parameters 누락으로
