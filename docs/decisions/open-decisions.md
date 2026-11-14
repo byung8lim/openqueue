@@ -69,7 +69,7 @@
 |---|---|---|---|---|
 | OD-01 | 오픈소스 라이선스 | MIT | `LICENSE`, README | 결정 |
 | OD-02 | Maven groupId / 패키지명 | `com.wbl.openqueue` | 코드·POM·문서 전환, 회귀 34/34 통과 | 결정 |
-| OD-03 | 저장소 호스팅·CI | GitHub `byung8lim/openqueue` | 원격 `origin`, `scripts/verify.sh`(CI와 동일 명령) | 결정 (최초 CI 결과 확인 = TASK-001) |
+| OD-03 | 저장소 호스팅·CI | GitHub `byung8lim/openqueue` | 최초 푸시 `5c3df52`, CI 2개 잡 성공 (TASK-001 보고서) | 결정·완료 |
 | OD-04 | CI 서드파티 Action 고정 방식 | 커밋 해시로 고정 | `.github/workflows/ci.yml` 적용(§5), Dependabot github-actions | 결정·적용 |
 | OD-05 | 의존성 취약점 검사 도구 | 권고안 채택 | Dependabot maven 추가(§6). Trivy는 Phase 2 | 권고안 채택 |
 | OD-06 | 취약점 신고 채널 | 프로젝트 소유자 | `SECURITY.md` | 결정 |

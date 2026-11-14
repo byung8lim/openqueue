@@ -51,9 +51,9 @@ ID는 한 번 부여하면 재사용하지 않는다. 폐기된 요구사항은 
 | ID | 요구사항 | 근거 | Phase | 상태 |
 |---|---|---|---|---|
 | QUE-001 | 동일 대기열에서 FIFO 순서로 입장 후보를 선정하고, 동일 입장 요청 재전송 시 중복 입장을 허용하지 않는다 | 요청서 7.3, 설계서 9.3 | 0(샘플), 1 | **검토중** (상세 §3) |
-| QUE-002 | Site/Queue 식별자 모델 및 입력 검증 | DEC-12 | 1 | 초안 (QUE-001에서 최소 범위 선구현) |
-| QUE-003 | 대기 세션 생성·조회·취소 | 9.3 | 1 | 초안 |
-| QUE-004 | 세션 만료(TTL) 및 재접속 복구 규칙 | 9.3, 8.2 | 1 | 초안 |
+| QUE-002 | Site/Queue 식별자 모델 및 입력 검증 | DEC-12 | 1 | 검토중 (QUE-001 D-QUE-001-3로 구현, DEC-12 확정) |
+| QUE-003 | 대기 세션 생성·조회·취소 | 9.3 | 1 | **검토중** (상세 §3, TASK-002) |
+| QUE-004 | 세션 만료(TTL) 및 재접속 복구 규칙 | 9.3, 8.2 | 1 | **검토중** (상세 §3, TASK-002) |
 | QUE-005 | 동시 입장 상한 기반 입장 가능 인원 계산 | 7.3 | 1 | 초안 |
 | QUE-006 | 초당/분당 입장률 제한 | 9.3 | 1 | 초안 |
 | QUE-007 | heartbeat 및 입장 lease 관리 | 7.3 | 1, 2 | 초안 |
@@ -163,3 +163,140 @@ Then 입력 오류가 발생하고 오류 메시지에 입력 원문이 포함�
 
 - 단위 테스트: `backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/WaitingQueueTest.java`, `IdentifierTest.java`
 - 통합/보안 테스트: Phase 2 (Redis 원자성·동시성)에서 작성
+
+---
+
+### QUE-003 대기 세션 생성·조회·취소
+
+| 항목 | 내용 |
+|---|---|
+| 요구사항 ID | QUE-003 |
+| 기능명 | 대기 세션 생성·조회·취소 |
+| 목적 | 사용자가 대기열에 들어오고(생성), 자신의 상태·순번을 확인하고(조회), 스스로 대기를 포기(취소)할 수 있게 한다. 취소된 세션이 입장 자원을 차지하지 않도록 한다. |
+| 설명 | 세션 생성은 QUE-001의 등록과 같은 연산이며 등록 시각·마지막 활동 시각을 함께 기록한다. 조회는 상태(`WAITING`/`ADMITTED`/`EXPIRED`/`CANCELLED`), 순번, 등록 시각, 마지막 활동 시각을 돌려준다. 취소는 대기 중 세션을 대기 순서에서 제거하고 `CANCELLED`로 전이한다. 입장 완료(`ADMITTED`) 세션의 취소는 "입장 포기"이며 역시 `CANCELLED`로 전이한다(점유 자원 해제는 QUE-007 lease에서 다룸). |
+| 선행 조건 | 대기열 범위와 대기열 정책(`QueuePolicy`, QUE-004)이 생성되어 있다. |
+| 입력 | (생성) `waiting_session_id`, `now` / (조회) `waiting_session_id` / (취소) `waiting_session_id` |
+| 정상 처리 흐름 | 1) 생성: 미등록 세션이면 `WAITING`으로 대기 순서 맨 뒤에 추가하고 `registered_at = last_seen_at = now`. 2) 조회: 세션 정보 반환, 대기 중이면 순번(1부터) 포함. 3) 취소: `WAITING` → 대기 순서에서 제거, 뒤 세션 순번 1씩 당겨짐, `CANCELLED`. `ADMITTED` → `CANCELLED`. |
+| 예외 처리 | 미등록·이미 종단 상태(`EXPIRED`/`CANCELLED`) 세션의 취소는 오류가 아니라 "변경 없음(false)"으로 처리한다(멱등, 재전송 안전). 식별자·시각 null → 입력 오류. |
+| 상태 변화 | `WAITING` → `CANCELLED`, `ADMITTED` → `CANCELLED`. `CANCELLED`는 종단 상태이며 재등록은 QUE-004 재진입 정책을 따른다. |
+| 권한 | 도메인 계층에 권한 없음. 세션 소유 확인(세션 ID 소지 = 소유)은 API 계층(Phase 3) 책임. |
+| 네트워크 Zone | DMZ (Queue Engine) |
+| 데이터 저장 위치 | Phase 1 메모리. Phase 2 Redis. 종단 상태 세션의 보관 기간은 Redis TTL로 정의(QUE-008). |
+| 로그/감사 | 도메인 계층 로그 없음. 취소·만료 건수는 지표 대상(OBS, Phase 7). |
+| 성능 및 동시성 조건 | 스레드 안전하지 않음(QUE-001과 동일). 취소·조회는 대기 인원 n에 대해 O(n) 이하. |
+| 보안 고려사항 | 타인의 세션 취소(IDOR)는 세션 ID의 추측 불가능성과 API 계층 소유 검증으로 막는다. 오류 메시지에 입력 원문 미포함. |
+| 연관 요구사항 | QUE-001, QUE-004, QUE-007, WUI-*, SEC-001 |
+
+#### 수용 기준
+
+```text
+AC-QUE-003-1 생성 후 조회
+Given 세션 A를 시각 T0에 생성하면
+Then 조회 결과는 status=WAITING, position=1, registered_at=T0, last_seen_at=T0 이다.
+
+AC-QUE-003-2 취소 시 뒤 순번이 당겨진다
+Given A, B, C가 순서대로 대기 중일 때
+When B를 취소하면
+Then B는 CANCELLED 이고 순번이 없으며, C의 순번은 2가 되고, 대기 인원은 2다.
+
+AC-QUE-003-3 취소 멱등성
+Given B가 이미 취소되었을 때
+When B를 다시 취소하면
+Then false 를 반환하고 상태는 CANCELLED 로 유지된다.
+
+AC-QUE-003-4 미등록 세션 취소
+When 등록된 적 없는 세션을 취소하면
+Then false 를 반환하고 그 세션은 여전히 미등록(조회 결과 없음)이다.
+
+AC-QUE-003-5 취소된 세션은 입장 후보가 되지 않는다
+Given A, B가 대기 중이고 A가 취소되었을 때
+When 입장 가능 인원 1이 주어지면
+Then B가 선정된다.
+
+AC-QUE-003-6 입장 완료 세션의 취소(입장 포기)
+Given A가 ADMITTED 일 때
+When A를 취소하면
+Then true 를 반환하고 A는 CANCELLED 가 된다.
+```
+
+---
+
+### QUE-004 세션 만료(TTL) 및 재접속 복구 규칙
+
+| 항목 | 내용 |
+|---|---|
+| 요구사항 ID | QUE-004 |
+| 기능명 | 대기 세션 만료 및 재접속 규칙 |
+| 목적 | 브라우저를 닫거나 네트워크가 끊긴 사용자가 대기열에 남아 뒤 사용자의 입장을 막지 않게 하고, 새로고침·재접속한 사용자는 순번을 잃지 않게 한다. |
+| 설명 | 대기열 정책 `QueuePolicy`에 대기 세션 TTL(`waiting_session_ttl`)과 재진입 정책(`reentry`: `ALLOW`/`DENY`)을 둔다. 세션은 활동 신호(heartbeat 또는 재등록)마다 `last_seen_at`을 갱신한다. `last_seen_at + ttl <= now` 인 `WAITING` 세션은 만료 처리(`EXPIRED`)되어 대기 순서에서 제거된다. 만료 처리는 명시적 연산 `expire(now)`로 수행하며, 입장 후보 선정(`admit`)은 선정 직전에 반드시 만료 처리를 먼저 수행한다(죽은 세션에 입장권을 주지 않기 위해). 종단 상태(`EXPIRED`/`CANCELLED`) 세션이 다시 등록하면 재진입 정책에 따라 맨 뒤에 새 세션으로 들어가거나(`ALLOW`) 거부된다(`DENY`). |
+| 선행 조건 | `QueuePolicy`가 유효하다(ttl > 0). |
+| 입력 | `QueuePolicy(waiting_session_ttl, reentry)`, (활동) `waiting_session_id`, `now`, (만료) `now` |
+| 정상 처리 흐름 | 1) heartbeat: `WAITING`/`ADMITTED` 세션의 `last_seen_at = now`, true. 2) 재등록(재접속): `WAITING`이면 순번 유지 + `last_seen_at` 갱신, 결과 `ALREADY_WAITING`. 3) expire(now): 조건을 만족하는 `WAITING` 세션을 등록 순서대로 `EXPIRED` 처리하고 목록 반환. 4) 재진입: 종단 상태 세션 등록 시 `ALLOW` → 새 `WAITING`(맨 뒤, `registered_at = now`), `DENY` → `REENTRY_DENIED`. |
+| 예외 처리 | ttl ≤ 0 또는 null, reentry null → 정책 생성 오류. 종단 상태·미등록 세션의 heartbeat → false(상태 불변). 시각 null → 입력 오류. |
+| 상태 변화 | `WAITING` → `EXPIRED`. `EXPIRED`/`CANCELLED` → (재진입 ALLOW) 새 `WAITING`. 시간은 외부에서 `now`로 주입한다(도메인은 시계를 갖지 않는다). |
+| 권한 | 없음(도메인). |
+| 네트워크 Zone | DMZ (Queue Engine) |
+| 데이터 저장 위치 | Phase 1 메모리. Phase 2에서 `last_seen_at`은 Redis ZSET score 또는 key TTL로 구현(QUE-008). |
+| 로그/감사 | 없음(도메인). 만료 건수는 지표. |
+| 성능 및 동시성 조건 | expire(now)는 대기 순서 앞에서부터 검사하되 등록 순서와 활동 순서가 다르므로 전체 O(n) 검사. Phase 2에서는 ZSET 범위 조회로 대체. |
+| 보안 고려사항 | heartbeat는 세션 ID 소지자만 가능(API 계층). TTL을 지나치게 길게 두면 좀비 세션이 자원을 점유하므로 정책 상한은 Control Plane 검증(Phase 5)에서 둔다. |
+| 연관 요구사항 | QUE-001, QUE-003, QUE-005, QUE-007, QUE-008, WUI-* |
+
+#### 수용 기준
+
+```text
+AC-QUE-004-1 TTL 경과 시 만료
+Given ttl=5분, A가 T0에 등록되고 B가 T0+1분에 등록되었을 때
+When T0+5분에 expire 를 수행하면
+Then A만 EXPIRED 가 되어 순번이 없고, B의 순번은 1이 된다.
+And 반환 목록은 [A] 이다.
+
+AC-QUE-004-2 경계값
+Given ttl=5분, A가 T0에 등록되었을 때
+When T0+5분-1ns 에 expire 하면 A는 WAITING 을 유지하고,
+When T0+5분 에 expire 하면 A는 EXPIRED 가 된다 (last_seen_at + ttl <= now).
+
+AC-QUE-004-3 heartbeat 로 만료 연장
+Given ttl=5분, A가 T0에 등록되고 T0+4분에 heartbeat 했을 때
+When T0+5분에 expire 하면 A는 WAITING 을 유지하고,
+When T0+9분에 expire 하면 A는 EXPIRED 가 된다.
+
+AC-QUE-004-4 재접속(재등록)은 순번을 유지하고 활동 시각을 갱신한다
+Given ttl=5분, A, B가 순서대로 T0에 등록되었을 때
+When A가 T0+4분에 다시 등록하면
+Then 결과는 ALREADY_WAITING 이고 A의 순번은 1, last_seen_at=T0+4분이며
+And T0+5분에 expire 하면 B만 만료된다.
+
+AC-QUE-004-5 만료 세션 재진입
+Given A가 EXPIRED 일 때
+When reentry=ALLOW 이면 A의 재등록은 REGISTERED 이고 맨 뒤 순번·registered_at=now 를 받는다.
+When reentry=DENY 이면 A의 재등록은 REENTRY_DENIED 이고 A는 EXPIRED 로 남는다.
+And CANCELLED 세션도 같은 규칙을 따른다.
+
+AC-QUE-004-6 입장 선정 전 만료 처리
+Given ttl=5분, A가 T0에, B가 T0+1분에 등록되었을 때
+When T0+5분에 입장 가능 인원 1로 admit 하면
+Then B가 선정되고 A는 EXPIRED 다.
+
+AC-QUE-004-7 종단 상태·미등록 세션의 heartbeat
+Given A가 EXPIRED 또는 CANCELLED 이거나 미등록일 때
+When heartbeat 하면 false 를 반환하고 상태가 바뀌지 않는다.
+
+AC-QUE-004-8 정책 검증
+When ttl 이 0, 음수, null 이거나 reentry 가 null 이면 정책 생성 시 입력 오류가 발생한다.
+```
+
+#### 결정 사항 (TASK-002 중 기록, 승인 필요)
+
+| ID | 결정 | 사유 |
+|---|---|---|
+| D-QUE-004-1 | 도메인은 시계를 갖지 않고 모든 시간 의존 연산에 `now`(Instant)를 인자로 받는다 | 결정적 테스트(test-strategy §2-4), Redis Lua 구현 시 서버 시각 주입과 동일 구조 |
+| D-QUE-004-2 | 만료는 명시적 `expire(now)` 연산에서만 일어나고, `admit`은 내부에서 먼저 `expire`를 호출한다. 조회 연산은 상태를 바꾸지 않는다 | 조회가 상태를 바꾸면 디버깅이 어렵다. 입장 선정만은 죽은 세션 배제가 정확성 요건이므로 예외 |
+| D-QUE-004-3 | `QueuePolicy`에 기본값을 두지 않는다(생성 시 필수) | TTL·재진입 기본값은 운영 정책(Control Plane, Phase 5)에서 정한다. 도메인이 임의 숫자를 갖지 않게 한다 |
+| D-QUE-004-4 | 종단 상태(`EXPIRED`/`CANCELLED`) 세션 정보는 메모리 모델에서 삭제하지 않는다 | 재진입 정책 판정과 조회 응답("만료되었습니다")에 필요. 보관 기간은 Phase 2 Redis TTL |
+| D-QUE-004-5 | `ADMITTED` 세션의 만료는 QUE-007(lease)에서 다루며 QUE-004의 `expire`는 `WAITING`만 대상이다 | 입장 후 점유 시간은 대기 TTL과 다른 정책(lease TTL)이다 |
+
+#### 테스트
+
+- 단위 테스트: `backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/WaitingSessionLifecycleTest.java` (QUE-003/004), `WaitingQueueTest.java` (QUE-001 회귀, 시그니처 갱신)
+

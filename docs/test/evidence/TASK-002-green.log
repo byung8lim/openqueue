@@ -1,0 +1,140 @@
+[INFO] Scanning for projects...
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] OpenQueue Backend                                                  [pom]
+[INFO] OpenQueue Queue Domain                                             [jar]
+[INFO] 
+[INFO] ----------------< com.wbl.openqueue:openqueue-backend >-----------------
+[INFO] Building OpenQueue Backend 0.1.0-SNAPSHOT                          [1/2]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ openqueue-backend ---
+[INFO] Deleting C:\dev\workspace\openqueue\backend\target
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-build-environment) @ openqueue-backend ---
+[INFO] Rule 0: org.apache.maven.enforcer.rules.version.RequireMavenVersion passed
+[INFO] Rule 1: org.apache.maven.enforcer.rules.version.RequireJavaVersion passed
+[INFO] Rule 2: org.apache.maven.enforcer.rules.dependency.DependencyConvergence passed
+[INFO] Rule 3: org.apache.maven.enforcer.rules.BanDuplicatePomDependencyVersions passed
+[INFO] 
+[INFO] --- jacoco:0.8.14:prepare-agent (prepare-agent) @ openqueue-backend ---
+[INFO] argLine set to -javaagent:C:\\Users\\byung8lim\\.m2\\repository\\org\\jacoco\\org.jacoco.agent\\0.8.14\\org.jacoco.agent-0.8.14-runtime.jar=destfile=C:\\dev\\workspace\\openqueue\\backend\\target\\jacoco.exec
+[INFO] 
+[INFO] --- jacoco:0.8.14:report (report) @ openqueue-backend ---
+[INFO] Skipping JaCoCo execution due to missing execution data file.
+[INFO] 
+[INFO] --- checkstyle:3.6.0:check (checkstyle-verify) @ openqueue-backend ---
+[INFO] Starting audit...
+Audit done.
+[INFO] You have 0 Checkstyle violations.
+[INFO] 
+[INFO] >>> spotbugs:4.9.8.2:check (spotbugs-verify) > :spotbugs @ openqueue-backend >>>
+[INFO] 
+[INFO] --- spotbugs:4.9.8.2:spotbugs (spotbugs) @ openqueue-backend ---
+[INFO] No files found to run spotbugs; check compile phase has been run.
+[INFO] Skipping com.github.spotbugs:spotbugs-maven-plugin:4.9.8.2:spotbugs report goal
+[INFO] 
+[INFO] <<< spotbugs:4.9.8.2:check (spotbugs-verify) < :spotbugs @ openqueue-backend <<<
+[INFO] 
+[INFO] 
+[INFO] --- spotbugs:4.9.8.2:check (spotbugs-verify) @ openqueue-backend ---
+[INFO] 
+[INFO] --------------< com.wbl.openqueue:openqueue-queue-domain >--------------
+[INFO] Building OpenQueue Queue Domain 0.1.0-SNAPSHOT                     [2/2]
+[INFO]   from openqueue-queue-domain\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ openqueue-queue-domain ---
+[INFO] Deleting C:\dev\workspace\openqueue\backend\openqueue-queue-domain\target
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-build-environment) @ openqueue-queue-domain ---
+[INFO] Rule 2: org.apache.maven.enforcer.rules.dependency.DependencyConvergence passed
+[INFO] Rule 3: org.apache.maven.enforcer.rules.BanDuplicatePomDependencyVersions passed
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-pure-domain-boundary) @ openqueue-queue-domain ---
+[INFO] Rule 0: org.apache.maven.enforcer.rules.dependency.BannedDependencies passed
+[INFO] 
+[INFO] --- jacoco:0.8.14:prepare-agent (prepare-agent) @ openqueue-queue-domain ---
+[INFO] argLine set to -javaagent:C:\\Users\\byung8lim\\.m2\\repository\\org\\jacoco\\org.jacoco.agent\\0.8.14\\org.jacoco.agent-0.8.14-runtime.jar=destfile=C:\\dev\\workspace\\openqueue\\backend\\openqueue-queue-domain\\target\\jacoco.exec
+[INFO] 
+[INFO] --- resources:3.4.0:resources (default-resources) @ openqueue-queue-domain ---
+[INFO] skip non existing resourceDirectory C:\dev\workspace\openqueue\backend\openqueue-queue-domain\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ openqueue-queue-domain ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 14 source files with javac [debug release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.4.0:testResources (default-testResources) @ openqueue-queue-domain ---
+[INFO] skip non existing resourceDirectory C:\dev\workspace\openqueue\backend\openqueue-queue-domain\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ openqueue-queue-domain ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 3 source files with javac [debug release 21] to target\test-classes
+[INFO] 
+[INFO] --- surefire:3.5.4:test (default-test) @ openqueue-queue-domain ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running AC-QUE-001-6 식별자 검증
+[INFO] Tests run: 18, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.361 s -- in AC-QUE-001-6 식별자 검증
+[INFO] Running QUE-001 WaitingQueue
+[INFO] Running AC-QUE-001-4/5 경계값과 연속 입장
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.039 s -- in AC-QUE-001-4/5 경계값과 연속 입장
+[INFO] Running AC-QUE-001-2/3 중복 등록
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.014 s -- in AC-QUE-001-2/3 중복 등록
+[INFO] Running AC-QUE-001-1 FIFO 선정과 재전송 멱등성
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.013 s -- in AC-QUE-001-1 FIFO 선정과 재전송 멱등성
+[INFO] Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.109 s -- in QUE-001 WaitingQueue
+[INFO] Running QUE-003/004 대기 세션 생명주기
+[INFO] Running AC-QUE-004 만료와 재접속
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.016 s -- in AC-QUE-004 만료와 재접속
+[INFO] Running AC-QUE-003 생성·조회·취소
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.011 s -- in AC-QUE-003 생성·조회·취소
+[INFO] Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.030 s -- in QUE-003/004 대기 세션 생명주기
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 50, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- jar:3.5.0:jar (default-jar) @ openqueue-queue-domain ---
+[INFO] Building jar: C:\dev\workspace\openqueue\backend\openqueue-queue-domain\target\openqueue-queue-domain-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] --- jacoco:0.8.14:report (report) @ openqueue-queue-domain ---
+[INFO] Loading execution data file C:\dev\workspace\openqueue\backend\openqueue-queue-domain\target\jacoco.exec
+[INFO] Analyzed bundle 'OpenQueue Queue Domain' with 14 classes
+[INFO] 
+[INFO] --- checkstyle:3.6.0:check (checkstyle-verify) @ openqueue-queue-domain ---
+[INFO] Starting audit...
+Audit done.
+[INFO] You have 0 Checkstyle violations.
+[INFO] 
+[INFO] >>> spotbugs:4.9.8.2:check (spotbugs-verify) > :spotbugs @ openqueue-queue-domain >>>
+[INFO] 
+[INFO] --- spotbugs:4.9.8.2:spotbugs (spotbugs) @ openqueue-queue-domain ---
+[INFO] Fork Value is true
+[INFO] Done SpotBugs Analysis....
+[INFO] Skipping com.github.spotbugs:spotbugs-maven-plugin:4.9.8.2:spotbugs report goal
+[INFO] 
+[INFO] <<< spotbugs:4.9.8.2:check (spotbugs-verify) < :spotbugs @ openqueue-queue-domain <<<
+[INFO] 
+[INFO] 
+[INFO] --- spotbugs:4.9.8.2:check (spotbugs-verify) @ openqueue-queue-domain ---
+[INFO] BugInstance size is 0
+[INFO] Error size is 0
+[INFO] No errors/warnings found
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for OpenQueue Backend 0.1.0-SNAPSHOT:
+[INFO] 
+[INFO] OpenQueue Backend .................................. SUCCESS [  2.893 s]
+[INFO] OpenQueue Queue Domain ............................. SUCCESS [  8.680 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  11.743 s
+[INFO] Finished at: 2026-11-14T09:14:27+09:00
+[INFO] ------------------------------------------------------------------------

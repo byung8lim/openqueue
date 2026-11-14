@@ -5,6 +5,9 @@
 ## [Unreleased]
 
 ### Added
+- TASK-002 (Phase 1): QUE-003 대기 세션 생성·조회·취소, QUE-004 만료(TTL)·heartbeat·재접속·재진입 정책 (단위 테스트 50건)
+- `docs/PROGRESS.md` 재개 지점 문서
+- TASK-001: GitHub 이관(`byung8lim/openqueue`), CI 최초 실행 성공(backend-verify, secret-scan), Dependabot 최초 실행
 - MIT 라이선스(OD-01), 패키지 `com.wbl.openqueue`(OD-02), 로컬 게이트 스크립트 `scripts/verify.sh`(OD-03)
 - ADR-0004~0007: 배포 토폴로지, 토큰 서명·Ingress, 관리자 인증, 런타임 라우트 관리 (소유자 1차 결정 반영)
 - ADR-0009: DMZ ↔ 내부망 Distribution API(DEC-02/06 승인), ADR-0008(Redis 경유)은 기각 기록. ADR-0005/0006/0007 승인 반영,

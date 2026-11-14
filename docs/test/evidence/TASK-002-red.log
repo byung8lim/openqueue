@@ -1,0 +1,4 @@
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/main/java/com/wbl/openqueue/queue/domain/WaitingQueue.java:[81,54] incompatible types: boolean cannot be converted to com.wbl.openqueue.queue.domain.RegistrationOutcome
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/main/java/com/wbl/openqueue/queue/domain/WaitingQueue.java:[84,50] incompatible types: boolean cannot be converted to com.wbl.openqueue.queue.domain.RegistrationOutcome
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/main/java/com/wbl/openqueue/queue/domain/WaitingQueue.java:[81,54] incompatible types: boolean cannot be converted to com.wbl.openqueue.queue.domain.RegistrationOutcome
+[ERROR] /C:/dev/workspace/openqueue/backend/openqueue-queue-domain/src/main/java/com/wbl/openqueue/queue/domain/WaitingQueue.java:[84,50] incompatible types: boolean cannot be converted to com.wbl.openqueue.queue.domain.RegistrationOutcome

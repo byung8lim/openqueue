@@ -3,6 +3,8 @@ package com.wbl.openqueue.queue.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Duration;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,11 +22,14 @@ class WaitingQueueTest {
     private static final WaitingSessionId SESSION_B = new WaitingSessionId("sessionB-0000000002");
     private static final WaitingSessionId SESSION_C = new WaitingSessionId("sessionC-0000000003");
 
+    private static final Instant NOW = Instant.parse("2026-11-14T00:00:00Z");
+
     private WaitingQueue queue;
 
     @BeforeEach
     void setUp() {
-        queue = new WaitingQueue(new QueueScope(new SiteId("shop"), new QueueId("main")));
+        queue = new WaitingQueue(new QueueScope(new SiteId("shop"), new QueueId("main")),
+            new QueuePolicy(Duration.ofMinutes(5), ReentryPolicy.ALLOW));
     }
 
     @Nested
@@ -34,10 +39,10 @@ class WaitingQueueTest {
         @Test
         @DisplayName("입장 가능 인원 1명이면 먼저 등록된 A만 선정되고 B는 1번 순번을 유지한다")
         void selectsFirstRegisteredSessionOnly() {
-            queue.register(SESSION_A);
-            queue.register(SESSION_B);
+            queue.register(SESSION_A, NOW);
+            queue.register(SESSION_B, NOW);
 
-            AdmissionResult result = queue.admit(new AdmissionRequestId("request-0001"), 1);
+            AdmissionResult result = queue.admit(new AdmissionRequestId("request-0001"), 1, NOW);
 
             assertThat(result.admittedSessions()).containsExactly(SESSION_A);
             assertThat(queue.statusOf(SESSION_A)).contains(WaitingSessionStatus.ADMITTED);
@@ -48,12 +53,12 @@ class WaitingQueueTest {
         @Test
         @DisplayName("같은 입장 요청이 재전송되면 최초 결과를 반환하고 추가 입장이 발생하지 않는다")
         void resentAdmissionRequestReturnsSameResultWithoutSideEffect() {
-            queue.register(SESSION_A);
-            queue.register(SESSION_B);
+            queue.register(SESSION_A, NOW);
+            queue.register(SESSION_B, NOW);
             AdmissionRequestId requestId = new AdmissionRequestId("request-0001");
 
-            AdmissionResult first = queue.admit(requestId, 1);
-            AdmissionResult resent = queue.admit(requestId, 1);
+            AdmissionResult first = queue.admit(requestId, 1, NOW);
+            AdmissionResult resent = queue.admit(requestId, 1, NOW);
 
             assertThat(resent).isEqualTo(first);
             assertThat(resent.admittedSessions()).containsExactly(SESSION_A);
@@ -64,12 +69,12 @@ class WaitingQueueTest {
         @Test
         @DisplayName("D-QUE-001-1: 재전송 시 available_slots 값이 달라도 최초 결과를 유지한다")
         void resentRequestWithDifferentSlotsKeepsFirstResult() {
-            queue.register(SESSION_A);
-            queue.register(SESSION_B);
+            queue.register(SESSION_A, NOW);
+            queue.register(SESSION_B, NOW);
             AdmissionRequestId requestId = new AdmissionRequestId("request-0001");
 
-            queue.admit(requestId, 1);
-            AdmissionResult resent = queue.admit(requestId, 5);
+            queue.admit(requestId, 1, NOW);
+            AdmissionResult resent = queue.admit(requestId, 5, NOW);
 
             assertThat(resent.admittedSessions()).containsExactly(SESSION_A);
             assertThat(queue.statusOf(SESSION_B)).contains(WaitingSessionStatus.WAITING);
@@ -78,11 +83,11 @@ class WaitingQueueTest {
         @Test
         @DisplayName("여러 명이 입장 가능하면 등록 순서 그대로 선정된다")
         void selectsInRegistrationOrder() {
-            queue.register(SESSION_C);
-            queue.register(SESSION_A);
-            queue.register(SESSION_B);
+            queue.register(SESSION_C, NOW);
+            queue.register(SESSION_A, NOW);
+            queue.register(SESSION_B, NOW);
 
-            AdmissionResult result = queue.admit(new AdmissionRequestId("request-0001"), 2);
+            AdmissionResult result = queue.admit(new AdmissionRequestId("request-0001"), 2, NOW);
 
             assertThat(result.admittedSessions()).containsExactly(SESSION_C, SESSION_A);
             assertThat(queue.positionOf(SESSION_B)).hasValue(1);
@@ -96,10 +101,10 @@ class WaitingQueueTest {
         @Test
         @DisplayName("대기 중인 세션의 재등록은 새로 추가되지 않고 기존 순번을 유지한다")
         void reRegistrationKeepsOriginalPosition() {
-            queue.register(SESSION_A);
-            queue.register(SESSION_B);
+            queue.register(SESSION_A, NOW);
+            queue.register(SESSION_B, NOW);
 
-            RegistrationResult again = queue.register(SESSION_A);
+            RegistrationResult again = queue.register(SESSION_A, NOW);
 
             assertThat(again.newlyRegistered()).isFalse();
             assertThat(queue.positionOf(SESSION_A)).hasValue(1);
@@ -110,8 +115,8 @@ class WaitingQueueTest {
         @Test
         @DisplayName("최초 등록은 newlyRegistered=true 를 반환하고 맨 뒤 순번을 받는다")
         void firstRegistrationIsAppended() {
-            RegistrationResult first = queue.register(SESSION_A);
-            RegistrationResult second = queue.register(SESSION_B);
+            RegistrationResult first = queue.register(SESSION_A, NOW);
+            RegistrationResult second = queue.register(SESSION_B, NOW);
 
             assertThat(first.newlyRegistered()).isTrue();
             assertThat(second.newlyRegistered()).isTrue();
@@ -121,10 +126,10 @@ class WaitingQueueTest {
         @Test
         @DisplayName("이미 입장한 세션은 재등록해도 대기열에 다시 추가되지 않는다")
         void admittedSessionIsNotQueuedAgain() {
-            queue.register(SESSION_A);
-            queue.admit(new AdmissionRequestId("request-0001"), 1);
+            queue.register(SESSION_A, NOW);
+            queue.admit(new AdmissionRequestId("request-0001"), 1, NOW);
 
-            RegistrationResult again = queue.register(SESSION_A);
+            RegistrationResult again = queue.register(SESSION_A, NOW);
 
             assertThat(again.newlyRegistered()).isFalse();
             assertThat(queue.statusOf(SESSION_A)).contains(WaitingSessionStatus.ADMITTED);
@@ -140,10 +145,10 @@ class WaitingQueueTest {
         @Test
         @DisplayName("입장 가능 인원이 0이면 아무도 선정되지 않는다")
         void zeroSlotsAdmitsNobody() {
-            queue.register(SESSION_A);
-            queue.register(SESSION_B);
+            queue.register(SESSION_A, NOW);
+            queue.register(SESSION_B, NOW);
 
-            AdmissionResult result = queue.admit(new AdmissionRequestId("request-0001"), 0);
+            AdmissionResult result = queue.admit(new AdmissionRequestId("request-0001"), 0, NOW);
 
             assertThat(result.admittedSessions()).isEmpty();
             assertThat(queue.waitingCount()).isEqualTo(2);
@@ -152,10 +157,10 @@ class WaitingQueueTest {
         @Test
         @DisplayName("입장 가능 인원이 대기 인원보다 많으면 대기자 전원만 선정된다")
         void slotsExceedingWaitingCountAdmitsAll() {
-            queue.register(SESSION_A);
-            queue.register(SESSION_B);
+            queue.register(SESSION_A, NOW);
+            queue.register(SESSION_B, NOW);
 
-            AdmissionResult result = queue.admit(new AdmissionRequestId("request-0001"), 5);
+            AdmissionResult result = queue.admit(new AdmissionRequestId("request-0001"), 5, NOW);
 
             assertThat(result.admittedSessions()).containsExactly(SESSION_A, SESSION_B);
             assertThat(queue.waitingCount()).isZero();
@@ -164,7 +169,7 @@ class WaitingQueueTest {
         @Test
         @DisplayName("빈 대기열에서 입장 요청 시 빈 결과를 반환한다")
         void emptyQueueAdmitsNobody() {
-            AdmissionResult result = queue.admit(new AdmissionRequestId("request-0001"), 3);
+            AdmissionResult result = queue.admit(new AdmissionRequestId("request-0001"), 3, NOW);
 
             assertThat(result.admittedSessions()).isEmpty();
         }
@@ -172,9 +177,9 @@ class WaitingQueueTest {
         @Test
         @DisplayName("입장 가능 인원이 음수이면 입력 오류가 발생하고 상태는 변하지 않는다")
         void negativeSlotsIsRejected() {
-            queue.register(SESSION_A);
+            queue.register(SESSION_A, NOW);
 
-            assertThatThrownBy(() -> queue.admit(new AdmissionRequestId("request-0001"), -1))
+            assertThatThrownBy(() -> queue.admit(new AdmissionRequestId("request-0001"), -1, NOW))
                     .isInstanceOf(IllegalArgumentException.class);
             assertThat(queue.statusOf(SESSION_A)).contains(WaitingSessionStatus.WAITING);
         }
@@ -182,11 +187,11 @@ class WaitingQueueTest {
         @Test
         @DisplayName("새로운 멱등 키의 입장 요청은 다음 대기자를 선정한다")
         void newRequestIdAdmitsNextSession() {
-            queue.register(SESSION_A);
-            queue.register(SESSION_B);
-            queue.admit(new AdmissionRequestId("request-0001"), 1);
+            queue.register(SESSION_A, NOW);
+            queue.register(SESSION_B, NOW);
+            queue.admit(new AdmissionRequestId("request-0001"), 1, NOW);
 
-            AdmissionResult second = queue.admit(new AdmissionRequestId("request-0002"), 1);
+            AdmissionResult second = queue.admit(new AdmissionRequestId("request-0002"), 1, NOW);
 
             assertThat(second.admittedSessions()).containsExactly(SESSION_B);
         }
@@ -201,17 +206,18 @@ class WaitingQueueTest {
         @Test
         @DisplayName("null 입력은 입력 오류로 거부한다")
         void nullInputsAreRejected() {
-            assertThatThrownBy(() -> queue.register(null)).isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> queue.admit(null, 1)).isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> new WaitingQueue(null)).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> queue.register(null, NOW)).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> queue.admit(null, 1, NOW)).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new WaitingQueue(null, queue.policy())).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new WaitingQueue(queue.scope(), null)).isInstanceOf(IllegalArgumentException.class);
         }
     }
 
     @Test
     @DisplayName("입장 결과 목록은 외부에서 변경할 수 없다")
     void admissionResultIsImmutable() {
-        queue.register(SESSION_A);
-        AdmissionResult result = queue.admit(new AdmissionRequestId("request-0001"), 1);
+        queue.register(SESSION_A, NOW);
+        AdmissionResult result = queue.admit(new AdmissionRequestId("request-0001"), 1, NOW);
 
         assertThatThrownBy(() -> result.admittedSessions().add(SESSION_B))
                 .isInstanceOf(UnsupportedOperationException.class);
