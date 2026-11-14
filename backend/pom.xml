@@ -40,7 +40,7 @@
         <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
         <checkstyle.version>10.26.1</checkstyle.version>
         <spotbugs-maven-plugin.version>4.9.8.2</spotbugs-maven-plugin.version>
-        <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
+        <jacoco-maven-plugin.version>0.8.16</jacoco-maven-plugin.version>
 
         <!-- 공통 설정 파일 위치: 각 모듈에서 parent 기준 상대경로로 참조한다. -->
         <openqueue.config.dir>${maven.multiModuleProjectDirectory}/config</openqueue.config.dir>
