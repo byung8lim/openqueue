@@ -2,7 +2,9 @@ package com.wbl.openqueue.queue.domain;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -12,10 +14,10 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 /**
- * 하나의 대기열 범위({@link QueueScope}) 안에서 FIFO 대기 순서, 입장 후보 선정, 세션 생명주기, 동시 입장 상한을 담당하는 도메인 모델.
+ * 하나의 대기열 범위({@link QueueScope}) 안에서 FIFO 대기 순서, 입장 후보 선정, 세션 생명주기, 동시 입장 상한, 입장률을 담당하는 도메인 모델.
  *
  * <p>요구사항: QUE-001(FIFO·멱등), QUE-003(생성·조회·취소), QUE-004(대기 만료·재접속),
- * QUE-005(동시 입장 상한), QUE-007(입장 lease·heartbeat) — docs/requirements/SRS.md §3
+ * QUE-005(동시 입장 상한), QUE-006(입장률), QUE-007(입장 lease·heartbeat) — docs/requirements/SRS.md §3
  *
  * <p>보호하는 불변조건:
  * <ol>
@@ -24,6 +26,7 @@ import java.util.OptionalInt;
  *   <li>ADMITTED 세션은 다시 WAITING 이 될 수 없다. 종단 상태(EXPIRED/CANCELLED)의 재등록은 정책에 따른다.</li>
  *   <li>같은 멱등 키의 입장 요청은 최초 1회만 상태를 변경하고, 이후에는 최초 결과를 반환한다.</li>
  *   <li>lease 가 유효한 ADMITTED 세션 수는 어떤 호출 경로로도 {@code concurrency_limit} 을 넘지 않는다(D-QUE-005-1).</li>
+ *   <li>입장률 창 안의 입장 사건 수는 {@code max_admissions} 를 넘지 않는다. 취소·lease 만료는 이 집계를 되돌리지 않는다(D-QUE-006-2).</li>
  *   <li>조회 연산은 상태를 바꾸지 않는다. 만료 전이는 {@link #expire}, {@link #expireLeases}, {@link #admit}(선정 직전)에서만 일어난다.</li>
  * </ol>
  *
@@ -53,6 +56,13 @@ public final class WaitingQueue {
 
     /** 입장 집합. ADMITTED 세션만 포함하며 입장 순서를 유지한다(lease 만료 처리 순서·지표용). */
     private final LinkedHashSet<WaitingSessionId> admitted = new LinkedHashSet<>();
+
+    /**
+     * 입장률 집계용 입장 시각 기록(입장 1건당 1개, 입장 순서). 창 밖으로 나간 기록은 다음 선정 때 제거한다.
+     * 정책이 {@link AdmissionRateLimit.Unlimited} 면 비어 있다(D-QUE-006-4). 세션 상태와 분리된 "사건" 기록이므로
+     * 세션이 취소·만료되어도 지우지 않는다(D-QUE-006-2).
+     */
+    private final Deque<Instant> recentAdmissions = new ArrayDeque<>();
 
     /**
      * 처리된 멱등 키별 결과. 재전송 시 상태 변경 없이 그대로 반환한다.
@@ -239,7 +249,35 @@ public final class WaitingQueue {
     }
 
     /**
-     * 남은 동시 입장 슬롯만큼 대기 순서 앞에서부터 입장 후보를 선정한다 (QUE-005).
+     * 입장률 정책이 이번 선정에서 허용하는 인원을 계산한다. 창 밖 기록 제거는 호출 전에 {@link #pruneAdmissionWindow} 로 수행한다.
+     * 무제한이면 사실상 제한이 없는 큰 값을 돌려주고, 선정 인원은 다른 상한(요청 인원·남은 슬롯)이 결정한다.
+     */
+    private int rateAllowance() {
+        return switch (policy.admissionRate()) {
+            case AdmissionRateLimit.Unlimited unlimited -> Integer.MAX_VALUE;
+            case AdmissionRateLimit.PerWindow perWindow -> Math.max(0, perWindow.maxAdmissions() - recentAdmissions.size());
+        };
+    }
+
+    /** 창 밖({@code t + window <= now})으로 나간 입장 기록을 제거한다. 무제한 정책이면 기록이 없어 아무 일도 하지 않는다. */
+    private void pruneAdmissionWindow(Instant now) {
+        if (policy.admissionRate() instanceof AdmissionRateLimit.PerWindow perWindow) {
+            // now 가 단조 증가하지 않는 호출(시계 되돌림)에도 안전하도록 머리부터가 아니라 전체를 검사한다.
+            recentAdmissions.removeIf(admittedAt -> !admittedAt.plus(perWindow.window()).isAfter(now));
+        }
+    }
+
+    /** 이번 선정의 입장 사건을 창 집계에 기록한다. 무제한 정책이면 기록하지 않는다(D-QUE-006-4). */
+    private void recordAdmissions(int count, Instant now) {
+        if (policy.admissionRate() instanceof AdmissionRateLimit.PerWindow) {
+            for (int i = 0; i < count; i++) {
+                recentAdmissions.addLast(now);
+            }
+        }
+    }
+
+    /**
+     * 남은 동시 입장 슬롯과 입장률 허용 인원만큼 대기 순서 앞에서부터 입장 후보를 선정한다 (QUE-005, QUE-006).
      * 처리 순서와 멱등 규칙은 {@link #admit(AdmissionRequestId, int, Instant)} 와 같다.
      *
      * @param requestId 입장 요청 멱등 키
@@ -252,21 +290,23 @@ public final class WaitingQueue {
     }
 
     /**
-     * 만료 세션을 먼저 정리한 뒤, 대기 순서 앞에서부터 최대 {@code min(requestedSlots, 남은 슬롯)} 명을 입장 후보로 선정한다.
+     * 만료 세션을 먼저 정리한 뒤, 대기 순서 앞에서부터 최대 {@code min(requestedSlots, 남은 슬롯, 입장률 허용)} 명을 입장 후보로 선정한다.
      *
      * <p>처리 순서:
      * <ol>
      *   <li>입력 검증 (오류 시 상태 불변)</li>
-     *   <li>멱등 키가 이미 처리되었으면 최초 결과를 그대로 반환한다(D-QUE-001-1)</li>
+     *   <li>멱등 키가 이미 처리되었으면 최초 결과를 그대로 반환한다(D-QUE-001-1). 입장률 집계도 바뀌지 않는다(AC-QUE-006-7)</li>
      *   <li>{@link #expireLeases} 로 만료된 입장 슬롯을 회수한다(AC-QUE-007-5)</li>
      *   <li>{@link #expire} 로 죽은 대기 세션을 배제한다(AC-QUE-004-6)</li>
-     *   <li>남은 슬롯을 계산하고 요청 인원과 비교해 작은 값만큼 선정한다(D-QUE-005-1)</li>
+     *   <li>입장률 창 밖 기록을 제거한다(AC-QUE-006-2/3)</li>
+     *   <li>요청 인원·남은 슬롯·입장률 허용 인원 중 가장 작은 값만큼 선정한다(D-QUE-005-1, AC-QUE-006-4/5)</li>
      *   <li>선정 세션을 ADMITTED 로 전이하고 입장 시각을 {@code last_seen_at} 에 기록해 lease 를 시작한다(D-QUE-007-1)</li>
+     *   <li>선정 건수만큼 입장 사건을 창 집계에 기록한다(D-QUE-006-4)</li>
      *   <li>결과를 멱등 키에 기록한다(빈 결과도 기록, D-QUE-005-3)</li>
      * </ol>
      *
      * @param requestId      입장 요청 멱등 키
-     * @param requestedSlots 호출자가 요청한 입장 인원(0 이상). 남은 슬롯보다 크면 남은 슬롯만큼만 선정된다
+     * @param requestedSlots 호출자가 요청한 입장 인원(0 이상). 남은 슬롯·입장률 허용 인원보다 크면 그만큼만 선정된다
      * @param now            현재 시각
      * @return 선정 결과(대기 순서 그대로의 세션 목록)
      * @throws IllegalArgumentException 인자가 null 이거나 requestedSlots 가 음수인 경우
@@ -286,13 +326,15 @@ public final class WaitingQueue {
 
         expireLeases(now);
         expire(now);
-        // 회수 직후이므로 남은 슬롯 = 상한 - 입장 집합 크기. 호출자 값은 신뢰하지 않고 상한으로 다시 제한한다.
-        int slots = Math.min(requestedSlots, availableSlots(now));
+        pruneAdmissionWindow(now);
+        // 회수 직후이므로 남은 슬롯 = 상한 - 입장 집합 크기. 호출자 값은 신뢰하지 않고 상한·입장률로 다시 제한한다.
+        int slots = Math.min(requestedSlots, Math.min(availableSlots(now), rateAllowance()));
         List<WaitingSessionId> selected = takeFromHead(slots);
         for (WaitingSessionId id : selected) {
             sessions.put(id, sessions.get(id).withStatus(WaitingSessionStatus.ADMITTED).withLastSeenAt(now));
             admitted.add(id);
         }
+        recordAdmissions(selected.size(), now);
 
         AdmissionResult result = new AdmissionResult(requestId, selected);
         processedAdmissions.put(requestId, result);

@@ -25,10 +25,11 @@ class AdmissionCapacityTest {
     private static final Instant T0 = Instant.parse("2026-11-14T00:00:00Z");
     private static final Duration WAITING_TTL = Duration.ofMinutes(5);
     private static final Duration LEASE_TTL = Duration.ofMinutes(10);
+    private static final AdmissionRateLimit UNLIMITED = AdmissionRateLimit.unlimited();
 
     private static WaitingQueue newQueue(int concurrencyLimit, ReentryPolicy reentry) {
         return new WaitingQueue(new QueueScope(new SiteId("shop"), new QueueId("main")),
-            new QueuePolicy(WAITING_TTL, reentry, concurrencyLimit, LEASE_TTL));
+            new QueuePolicy(WAITING_TTL, reentry, concurrencyLimit, LEASE_TTL, UNLIMITED));
     }
 
     /** A 를 T0 에 등록하고 바로 입장시킨다(lease 시작 = T0). */
@@ -104,9 +105,9 @@ class AdmissionCapacityTest {
         @Test
         @DisplayName("AC-QUE-005-5 정책 검증: 상한이 0 또는 음수면 입력 오류")
         void concurrencyLimitValidation() {
-            assertThatThrownBy(() -> new QueuePolicy(WAITING_TTL, ReentryPolicy.ALLOW, 0, LEASE_TTL))
+            assertThatThrownBy(() -> new QueuePolicy(WAITING_TTL, ReentryPolicy.ALLOW, 0, LEASE_TTL, UNLIMITED))
                 .isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> new QueuePolicy(WAITING_TTL, ReentryPolicy.ALLOW, -1, LEASE_TTL))
+            assertThatThrownBy(() -> new QueuePolicy(WAITING_TTL, ReentryPolicy.ALLOW, -1, LEASE_TTL, UNLIMITED))
                 .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -214,11 +215,11 @@ class AdmissionCapacityTest {
         @Test
         @DisplayName("AC-QUE-007-7 정책 검증: lease ttl 0·음수·null 은 입력 오류")
         void leaseTtlValidation() {
-            assertThatThrownBy(() -> new QueuePolicy(WAITING_TTL, ReentryPolicy.ALLOW, 1, Duration.ZERO))
+            assertThatThrownBy(() -> new QueuePolicy(WAITING_TTL, ReentryPolicy.ALLOW, 1, Duration.ZERO, UNLIMITED))
                 .isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> new QueuePolicy(WAITING_TTL, ReentryPolicy.ALLOW, 1, Duration.ofSeconds(-1)))
+            assertThatThrownBy(() -> new QueuePolicy(WAITING_TTL, ReentryPolicy.ALLOW, 1, Duration.ofSeconds(-1), UNLIMITED))
                 .isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> new QueuePolicy(WAITING_TTL, ReentryPolicy.ALLOW, 1, null))
+            assertThatThrownBy(() -> new QueuePolicy(WAITING_TTL, ReentryPolicy.ALLOW, 1, null, UNLIMITED))
                 .isInstanceOf(IllegalArgumentException.class);
         }
 

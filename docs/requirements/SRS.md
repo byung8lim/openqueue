@@ -55,7 +55,7 @@ ID는 한 번 부여하면 재사용하지 않는다. 폐기된 요구사항은 
 | QUE-003 | 대기 세션 생성·조회·취소 | 9.3 | 1 | **검토중** (상세 §3, TASK-002) |
 | QUE-004 | 세션 만료(TTL) 및 재접속 복구 규칙 | 9.3, 8.2 | 1 | **검토중** (상세 §3, TASK-002) |
 | QUE-005 | 동시 입장 상한 기반 입장 가능 인원 계산 | 7.3 | 1 | **검토중** (상세 §3, TASK-003) |
-| QUE-006 | 초당/분당 입장률 제한 | 9.3 | 1 | 초안 |
+| QUE-006 | 초당/분당 입장률 제한 | 9.3 | 1 | **검토중** (상세 §3, TASK-004) |
 | QUE-007 | heartbeat 및 입장 lease 관리 | 7.3 | 1, 2 | **검토중** (상세 §3 도메인 부분, TASK-003; Redis 부분은 Phase 2) |
 | QUE-008 | Redis Lua 기반 원자적 등록·입장 할당. Standalone/Sentinel/Cluster 공통 key 설계(hash tag), failover 초과 입장 방지 | 7.3, ADR-0004 | 2 | 초안 |
 | QUE-009 | 사이트별 Fail-open/Fail-closed 정책 적용. **기본값 Fail-closed**, 사이트별 변경 가능 | SEC-11, 12.2, DEC-09 | 2 | 초안 (방향 결정됨) |
@@ -368,6 +368,90 @@ Then A 의 상태는 여전히 ADMITTED 다 (회수는 expireLeases/admit 에서
 #### 테스트
 
 - 단위 테스트: `backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionCapacityTest.java`
+
+---
+
+### QUE-006 초당/분당 입장률 제한
+
+| 항목 | 내용 |
+|---|---|
+| 요구사항 ID | QUE-006 |
+| 기능명 | 입장률(단위 시간당 입장 수) 제한 |
+| 목적 | 동시 입장 상한(QUE-005)이 여유가 있어도 짧은 시간에 많은 사용자가 한꺼번에 입장해 원본 서비스에 순간 부하가 몰리는 것을 막는다. 운영자가 "분당 N명"처럼 입장 속도를 정할 수 있게 한다(설계서 9.3). |
+| 설명 | `QueuePolicy`에 입장률 정책 `admission_rate` 를 둔다. 값은 `PerWindow(max_admissions, window)`(창 길이 `window` 동안 최대 `max_admissions` 건) 또는 `Unlimited`(제한 없음) 중 하나이며 반드시 명시한다(기본값 없음, D-QUE-004-3). 집계는 슬라이딩 창이다: 입장 시각 `t` 는 `t + window > now` 이면 창 안에 있다. 이번 선정에서 허용되는 인원은 `max_admissions - 창 안 입장 건수`(0 미만이면 0)이고, 최종 선정 인원은 `min(요청 인원, 남은 슬롯(QUE-005), 입장률 허용 인원)` 이다. 입장률은 "입장 사건" 기준이므로 입장 후 취소·lease 만료로 슬롯이 회수되어도 창 집계에는 남는다. 재전송(멱등 키 재사용)은 새 입장 사건이 아니므로 집계하지 않는다. |
+| 선행 조건 | `QueuePolicy` 유효(`admission_rate` 가 null 이 아니고, `PerWindow` 면 `max_admissions >= 1`, `window > 0`). |
+| 입력 | (정책) `admission_rate` / (선정) `admission_request_id`, `now`, 선택적으로 `requested_slots` |
+| 정상 처리 흐름 | `admit` 처리 순서(QUE-005)에 다음을 끼워 넣는다: lease 회수 → 대기 만료 → **창 밖 입장 기록 제거** → `slots = min(요청, 남은 슬롯, 입장률 허용)` → 선정 → **선정 건마다 입장 시각 기록**(`PerWindow` 일 때만) → 멱등 키 기록. |
+| 예외 처리 | `admission_rate` null → 정책 생성 오류. `max_admissions < 1`, `window` null·0·음수 → 정책 생성 오류. 입장률 때문에 선정이 0 이어도 오류가 아니라 빈 결과이며 멱등 키에 기록한다(D-QUE-005-3 과 동일). |
+| 상태 변화 | 세션 상태 전이는 QUE-001/005 와 같다. 입장률 집계는 세션 상태가 아닌 대기열 내부 기록(입장 시각 목록)이다. |
+| 권한 | 없음(도메인). 정책 값은 Control Plane(Phase 5). |
+| 네트워크 Zone | DMZ (Queue Engine) |
+| 데이터 저장 위치 | Phase 1 메모리(입장 시각 목록). Phase 2: Redis ZSET(score=입장 시각) 또는 고정 창 카운터로 Lua 내부에서 원자 집계(QUE-008). |
+| 로그/감사 | 없음(도메인). 입장률 제한으로 미선정된 횟수는 지표(OBS). |
+| 성능 및 동시성 조건 | 입장 기록은 창 안 건수만 유지하므로 메모리는 `max_admissions` 수준으로 유지된다. 창 밖 제거는 O(창 안 건수). `Unlimited` 는 기록하지 않는다. 다중 노드 집계는 QUE-008. |
+| 보안 고려사항 | 입장률은 원본 서비스 보호(가용성) 장치다. 호출 측이 `now` 를 과거로 넘겨 창을 우회하는 것은 도메인에서 막지 않으며(시간은 신뢰 경계 안의 서버 시각), 시각은 Queue Engine 서버 시계만 사용한다는 전제를 Phase 3 API 에 기록한다. |
+| 연관 요구사항 | QUE-001, QUE-005, QUE-007, QUE-008, OBS-* |
+
+#### 수용 기준
+
+```text
+AC-QUE-006-1 창 안에서는 최대 건수까지만 입장
+Given admission_rate=PerWindow(2, 1분), concurrency_limit=10 이고 A~E 가 대기 중일 때
+When admit(R1, T0) 하면 A, B 가 선정되고
+When admit(R2, T0+30초) 하면 아무도 선정되지 않는다(창 안 입장 2건).
+
+AC-QUE-006-2 창 경계
+Given 위 상태에서
+When admit(R3, T0+1분-1ns) 하면 아무도 선정되지 않고,
+When admit(R4, T0+1분) 하면 2명이 선정된다 (t + window <= now 이면 창 밖).
+
+AC-QUE-006-3 슬라이딩 창
+Given admission_rate=PerWindow(2, 1분) 이고 A~D 가 대기 중일 때
+When admit(R1, 1, T0) → [A], admit(R2, 1, T0+30초) → [B] 이면
+Then admit(R3, T0+1분) → [C] (B 가 아직 창 안이라 1명만),
+And admit(R4, T0+1분30초) → [D] (B 가 창 밖으로 나가 1명 허용).
+
+AC-QUE-006-4 동시 입장 상한과 결합(최솟값)
+Given concurrency_limit=1, admission_rate=PerWindow(5, 1분), 3명 대기 → admit 하면 1명.
+Given concurrency_limit=5, admission_rate=PerWindow(1, 1분), 3명 대기 → admit 하면 1명.
+
+AC-QUE-006-5 명시 인원과 결합
+Given admission_rate=PerWindow(2, 1분), concurrency_limit=10, 5명 대기
+When admit(R, requested_slots=5, T0) 하면 2명이 선정된다.
+
+AC-QUE-006-6 무제한
+Given admission_rate=Unlimited, concurrency_limit=10, 5명 대기
+When 같은 시각 T0 에 admit(R1, 3, T0), admit(R2, T0) 를 연속 수행하면 3명, 2명이 선정된다.
+
+AC-QUE-006-7 재전송은 입장률을 소비하지 않는다
+Given admission_rate=PerWindow(2, 1분), A~D 대기
+When admit(R1, T0) → [A, B] 이고 같은 R1 을 재전송하면 같은 결과이며
+Then admit(R2, T0+1분) 하면 C, D 가 선정된다(재전송이 집계되었다면 0명이었을 것).
+
+AC-QUE-006-8 취소·lease 만료는 입장률 집계를 되돌리지 않는다
+Given admission_rate=PerWindow(1, 1분), concurrency_limit=5, A, B 대기, A 가 T0 에 입장
+When T0+10초에 A 를 취소하면 availableSlots=5 이지만
+Then admit(R2, T0+10초) 는 아무도 선정하지 않는다(입장 사건 1건이 창 안).
+And admit(R3, T0+1분) 은 B 를 선정한다.
+
+AC-QUE-006-9 정책 검증
+When admission_rate 가 null 이면 정책 생성 오류.
+When PerWindow 의 max_admissions 가 0·음수이거나 window 가 null·0·음수이면 생성 오류.
+```
+
+#### 결정 사항 (TASK-004 중 기록, 승인 필요)
+
+| ID | 결정 | 사유 |
+|---|---|---|
+| D-QUE-006-1 | 입장률은 `PerWindow(max, window)` 또는 `Unlimited` 를 **명시**하며 기본값을 두지 않는다 | D-QUE-004-3 과 일관. "제한 없음"도 운영자의 의도적 선택이어야 한다 |
+| D-QUE-006-2 | 입장률은 "입장 사건" 기준 슬라이딩 창으로 집계하고, 취소·lease 만료로 슬롯이 회수되어도 집계를 되돌리지 않는다 | 입장률의 목적은 원본 서비스에 도달하는 **신규 유입 속도** 제어다. 취소된 사용자도 이미 유입 부하를 일으켰다. 점유(동시 접속) 보호는 QUE-005 가 담당하므로 두 장치의 기준을 분리한다 |
+| D-QUE-006-3 | 창 포함 판정은 `t + window > now`(창 안), `t + window <= now`(창 밖)로 TTL 규칙(QUE-004/007)과 같은 부등호를 쓴다 | 세 가지 시간 규칙의 경계가 같아야 사람이 디버깅할 때 혼동이 없다 |
+| D-QUE-006-4 | `Unlimited` 일 때는 입장 시각을 기록하지 않는다 | 창이 없으면 기록을 제거할 기준이 없어 메모리가 무한히 늘어난다 |
+| D-QUE-006-5 | 입장률 정책 타입은 sealed interface `AdmissionRateLimit` + 두 record(`Unlimited`, `PerWindow`)로 표현한다 | "무제한"을 `Integer.MAX_VALUE` 같은 특수값이나 null 로 표현하면 읽는 사람이 의도를 알 수 없다. switch 로 모든 경우를 컴파일러가 강제한다 |
+
+#### 테스트
+
+- 단위 테스트: `backend/openqueue-queue-domain/src/test/java/com/wbl/openqueue/queue/domain/AdmissionRateLimitTest.java` (QUE-006), 기존 테스트는 정책 생성자 인자 추가만
 
 ---
 

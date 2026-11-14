@@ -3,24 +3,27 @@ package com.wbl.openqueue.queue.domain;
 import java.time.Duration;
 
 /**
- * 대기열 운영 정책 (QUE-004, QUE-005, QUE-007 범위).
+ * 대기열 운영 정책 (QUE-004, QUE-005, QUE-006, QUE-007 범위).
  *
- * <p>기본값을 두지 않는다(D-QUE-004-3). 운영 기본값과 값의 상·하한은 Control Plane 정책 검증(Phase 5)에서 정한다.
+ * <p>기본값을 두지 않는다(D-QUE-004-3, D-QUE-006-1). 운영 기본값과 값의 상·하한은 Control Plane 정책 검증(Phase 5)에서 정한다.
  *
  * @param waitingSessionTtl 마지막 활동 이후 이 시간이 지나면 대기(WAITING) 세션을 만료한다 (양수, QUE-004)
  * @param reentry           종단 상태 세션의 재등록 처리 (QUE-004)
  * @param concurrencyLimit  동시에 입장(ADMITTED, lease 유효)할 수 있는 최대 세션 수 (1 이상, QUE-005)
  * @param admissionLeaseTtl 입장 후 마지막 활동 이후 이 시간이 지나면 입장 lease 를 만료해 슬롯을 회수한다 (양수, QUE-007)
+ * @param admissionRate     단위 시간당 입장 건수 제한. 제한하지 않을 때도 {@link AdmissionRateLimit#unlimited()} 를 명시한다 (QUE-006)
  */
-public record QueuePolicy(Duration waitingSessionTtl, ReentryPolicy reentry, int concurrencyLimit, Duration admissionLeaseTtl) {
+public record QueuePolicy(Duration waitingSessionTtl, ReentryPolicy reentry, int concurrencyLimit, Duration admissionLeaseTtl,
+                          AdmissionRateLimit admissionRate) {
 
     /**
      * 정책 값을 검증한다.
      *
-     * @throws IllegalArgumentException ttl 류가 null·0·음수이거나, reentry 가 null 이거나, 상한이 1 미만인 경우
+     * @throws IllegalArgumentException ttl 류가 null·0·음수이거나, reentry·admissionRate 가 null 이거나, 상한이 1 미만인 경우
      */
     public QueuePolicy {
         IdentifierRules.requireNonNull(reentry, "reentry");
+        IdentifierRules.requireNonNull(admissionRate, "admission_rate");
         requirePositive(waitingSessionTtl, "waiting_session_ttl");
         requirePositive(admissionLeaseTtl, "admission_lease_ttl");
         if (concurrencyLimit < 1) {

@@ -29,7 +29,7 @@ class WaitingQueueTest {
     @BeforeEach
     void setUp() {
         queue = new WaitingQueue(new QueueScope(new SiteId("shop"), new QueueId("main")),
-            new QueuePolicy(Duration.ofMinutes(5), ReentryPolicy.ALLOW, 10, Duration.ofMinutes(10)));
+            new QueuePolicy(Duration.ofMinutes(5), ReentryPolicy.ALLOW, 10, Duration.ofMinutes(10), AdmissionRateLimit.unlimited()));
     }
 
     @Nested
